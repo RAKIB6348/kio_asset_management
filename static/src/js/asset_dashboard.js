@@ -179,7 +179,7 @@ export class AssetDashboard extends Component {
     }
 
     openAssetDetails(row) {
-        this.selectedAsset = this.assetDetailsByCode[row.code] || buildAssetDetails(row);
+        this.selectedAsset = buildAssetDetails(row);
         this.state.previousPage = "asset_list";
         this.state.page = "asset_details";
     }

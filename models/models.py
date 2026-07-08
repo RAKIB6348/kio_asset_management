@@ -148,9 +148,11 @@ class KioAssetDashboardService(models.AbstractModel):
             'invoiceNumber': row.get('invoiceNumber') or '-',
             'poNumber': row.get('poNumber') or '-',
             'purchaseDate': row['purchaseDate'],
-            'purchasePrice': row.get('totalPrice') or row['price'],
-            'purchasePriceShort': row.get('totalPrice') or row['price'],
-            'currentValue': row.get('totalPrice') or row['price'],
+            
+            # per quantity price
+            'purchasePrice': row['price'],
+            'purchasePriceShort': row['price'],
+            'currentValue': row['price'],
             'accumulatedDepreciation': self._format_money(0.0),
             'warrantyExpiry': '-',
             'expectedReturn': '-',

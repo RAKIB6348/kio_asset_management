@@ -199,6 +199,7 @@
             </t>
             <t t-if="state.page === 'asset_list'" t-call="kio_asset_management.AssetListPage"/>
             <t t-if="state.page === 'add_asset'" t-call="kio_asset_management.AddAssetPage"/>
+            <t t-if="state.page === 'asset_details'" t-call="kio_asset_management.AssetDetailsPage"/>
         </div>
     </t>
 </templates>

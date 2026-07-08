@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="kio_asset_management.AssetDetailsPage" owl="1">
+        <section class="kio_asset_details_page">
+            <header class="kio_details_header">
+                <button class="kio_list_back" type="button" t-on-click="backToAssetList" aria-label="Back to asset list"><i class="fa fa-arrow-left"/></button>
+                <div class="kio_list_title_block">
+                    <h1>Asset Details</h1>
+                    <nav class="kio_breadcrumb" aria-label="Breadcrumb">
+                        <button type="button" t-on-click="openDashboard">Dashboard</button>
+                        <i class="fa fa-angle-right"/>
+                        <span>Assets</span>
+                        <i class="fa fa-angle-right"/>
+                        <button type="button" t-on-click="backToAssetList">Asset List</button>
+                        <i class="fa fa-angle-right"/>
+                        <strong t-esc="selectedAsset.code"/>
+                    </nav>
+                </div>
+                <div class="kio_asset_header_tools kio_list_tools">
+                    <label class="kio_asset_search kio_list_search"><i class="fa fa-search"/><input type="search" placeholder="Search assets..."/></label>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Notifications"><i class="fa fa-bell-o"/><span class="kio_asset_badge">8</span></button>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Messages"><i class="fa fa-envelope-o"/><span class="kio_asset_badge">5</span></button>
+                    <button class="kio_asset_avatar" type="button" aria-label="User profile"><span>AU</span></button>
+                </div>
+            </header>
+
+            <main class="kio_details_main">
+                <div class="kio_details_actions">
+                    <button class="kio_soft_btn" type="button" t-on-click="editAsset"><i class="fa fa-pencil"/> Edit</button>
+                    <button class="kio_soft_btn" type="button" t-on-click="assignAsset"><i class="fa fa-user-o"/> Assign Asset</button>
+                    <button class="kio_details_more" type="button" t-on-click="moreAssetActions">More Actions <i class="fa fa-angle-down"/></button>
+                </div>
+
+                <section class="kio_details_summary_card">
+                    <div class="kio_details_asset_visual"><i class="fa fa-laptop"/></div>
+                    <div class="kio_details_summary_body">
+                        <div class="kio_details_name_row"><h2 t-esc="selectedAsset.name"/><span class="kio_status_badge kio_status_green" t-esc="selectedAsset.activeState"/></div>
+                        <div class="kio_details_facts">
+                            <div><span>Asset Code</span><strong t-esc="selectedAsset.code"/></div>
+                            <div><span>Serial Number</span><strong t-esc="selectedAsset.serial"/></div>
+                            <div><span>Category</span><strong t-esc="selectedAsset.category"/></div>
+                            <div><span>Brand / Model</span><strong t-esc="selectedAsset.brand"/></div>
+                            <div><span>Asset Type</span><strong t-esc="selectedAsset.assetType"/></div>
+                            <div><span>Status</span><strong><span t-attf-class="kio_status_badge kio_status_#{selectedAsset.statusTone}" t-esc="selectedAsset.status"/></strong></div>
+                        </div>
+                    </div>
+                    <aside class="kio_qr_box"><div class="kio_fake_qr"><i class="fa fa-qrcode"/></div><span>Scan for details</span></aside>
+                </section>
+
+                <section class="kio_finance_summary_grid">
+                    <article><i class="fa fa-credit-card kio_icon_blue"/><span>Purchase Price</span><strong t-esc="selectedAsset.purchasePriceShort"/></article>
+                    <article><i class="fa fa-line-chart kio_icon_green"/><span>Current Value</span><strong t-esc="selectedAsset.currentValue"/></article>
+                    <article><i class="fa fa-magic kio_icon_orange"/><span>Accumulated Depreciation</span><strong t-esc="selectedAsset.accumulatedDepreciation"/></article>
+                    <article><i class="fa fa-calendar kio_icon_red"/><span>Purchase Date</span><strong t-esc="selectedAsset.purchaseDate"/></article>
+                    <article><i class="fa fa-shield kio_icon_orange"/><span>Warranty Expiry</span><strong t-esc="selectedAsset.warrantyExpiry"/></article>
+                    <article><i class="fa fa-clock-o kio_icon_green"/><span>Useful Life (Years)</span><strong t-esc="selectedAsset.usefulLife"/></article>
+                </section>
+
+                <nav class="kio_details_tabs" aria-label="Asset details tabs">
+                    <button class="is_active" type="button">General Information</button>
+                    <button type="button">Assignment</button>
+                    <button type="button">Location</button>
+                    <button type="button">Financials</button>
+                    <button type="button">Maintenance</button>
+                    <button type="button">Depreciation</button>
+                    <button type="button">Documents</button>
+                    <button type="button">History</button>
+                </nav>
+
+                <section class="kio_details_content_grid">
+                    <div class="kio_details_left">
+                        <article class="kio_details_card">
+                            <h2>General Information</h2>
+                            <div class="kio_details_info_grid">
+                                <div><span>Asset Code</span><strong t-esc="selectedAsset.code"/></div>
+                                <div><span>Supplier / Vendor</span><strong t-esc="selectedAsset.supplier"/></div>
+                                <div><span>Asset Name</span><strong t-esc="selectedAsset.name"/></div>
+                                <div><span>Invoice Number</span><strong t-esc="selectedAsset.invoiceNumber"/></div>
+                                <div><span>Category</span><strong t-esc="selectedAsset.category"/></div>
+                                <div><span>PO Number</span><strong t-esc="selectedAsset.poNumber"/></div>
+                                <div><span>Brand / Model</span><strong t-esc="selectedAsset.brand"/></div>
+                                <div><span>Purchase Date</span><strong t-esc="selectedAsset.purchaseDate"/></div>
+                                <div><span>Serial Number</span><strong t-esc="selectedAsset.serial"/></div>
+                                <div><span>Purchase Price</span><strong t-esc="selectedAsset.purchasePrice"/></div>
+                                <div><span>Barcode / QR Code</span><strong t-esc="selectedAsset.barcode"/></div>
+                                <div><span>Warranty Expiry Date</span><strong t-esc="selectedAsset.warrantyExpiry"/></div>
+                                <div><span>Asset Type</span><strong t-esc="selectedAsset.assetType"/></div>
+                                <div><span>Expected Return Date</span><strong t-esc="selectedAsset.expectedReturn"/></div>
+                                <div><span>Status</span><strong><span t-attf-class="kio_status_badge kio_status_#{selectedAsset.statusTone}" t-esc="selectedAsset.status"/></strong></div>
+                                <div><span>Invoice File</span><strong><button class="kio_invoice_link" type="button"><t t-esc="selectedAsset.invoiceFile"/> <i class="fa fa-download"/></button></strong></div>
+                                <div><span>Condition</span><strong t-esc="selectedAsset.condition"/></div>
+                                <div></div>
+                                <div class="kio_info_wide"><span>Description</span><strong t-esc="selectedAsset.description"/></div>
+                                <div class="kio_info_wide"><span>Tags / Notes</span><strong t-esc="selectedAsset.tagsNotes"/></div>
+                            </div>
+                        </article>
+
+                        <article class="kio_details_card kio_maintenance_card">
+                            <h2><i class="fa fa-wrench"/> Maintenance Overview</h2>
+                            <div class="kio_details_table_wrap">
+                                <table class="kio_details_table">
+                                    <thead><tr><th>Request No</th><th>Request Date</th><th>Issue</th><th>Status</th><th>Priority</th><th>Next Maintenance</th><th>Actions</th></tr></thead>
+                                    <tbody>
+                                        <t t-foreach="selectedAsset.maintenanceRows" t-as="row" t-key="row.requestNo">
+                                            <tr>
+                                                <td><a href="#" t-esc="row.requestNo"/></td>
+                                                <td t-esc="row.requestDate"/>
+                                                <td t-esc="row.issue"/>
+                                                <td><span t-attf-class="kio_status_badge kio_status_#{row.statusTone}" t-esc="row.status"/></td>
+                                                <td><span t-attf-class="kio_status_badge kio_status_#{row.priorityTone}" t-esc="row.priority"/></td>
+                                                <td t-esc="row.nextMaintenance"/>
+                                                <td><button class="kio_row_view" type="button"><i class="fa fa-eye"/></button></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="kio_link_button" type="button">View All Maintenance Requests</button>
+                        </article>
+                    </div>
+
+                    <aside class="kio_details_right">
+                        <article class="kio_details_card">
+                            <h2><i class="fa fa-user-o"/> Current Assignment</h2>
+                            <div class="kio_assignment_grid">
+                                <div><span>Assigned To</span><strong><span class="kio_person_avatar">JD</span><span><t t-esc="selectedAsset.assignment.assignedTo"/><small t-esc="selectedAsset.assignment.department"/></span></strong></div>
+                                <div><span>Assign Date</span><strong t-esc="selectedAsset.assignment.assignDate"/></div>
+                                <div><span>Employee ID</span><strong t-esc="selectedAsset.assignment.employeeId"/></div>
+                                <div><span>Expected Return</span><strong t-esc="selectedAsset.assignment.expectedReturn"/></div>
+                            </div>
+                            <button class="kio_outline_full" type="button">View Assignment History</button>
+                        </article>
+
+                        <article class="kio_details_card">
+                            <h2><i class="fa fa-map-marker"/> Location Information</h2>
+                            <div class="kio_assignment_grid">
+                                <div><span>Location</span><strong t-esc="selectedAsset.location.location"/></div>
+                                <div><span>Building / Floor</span><strong t-esc="selectedAsset.location.buildingFloor"/></div>
+                                <div><span>Room / Area</span><strong t-esc="selectedAsset.location.roomArea"/></div>
+                                <div><span>Department</span><strong t-esc="selectedAsset.location.department"/></div>
+                            </div>
+                        </article>
+
+                        <article class="kio_details_card">
+                            <h2><i class="fa fa-sliders"/> Quick Actions</h2>
+                            <div class="kio_quick_action_grid">
+                                <button type="button" t-on-click="editAsset"><i class="fa fa-pencil"/> Edit Asset</button>
+                                <button type="button" t-on-click="transferAsset"><i class="fa fa-exchange"/> Transfer Asset</button>
+                                <button type="button" t-on-click="createMaintenance"><i class="fa fa-wrench"/> Create Maintenance</button>
+                                <button type="button" t-on-click="printAssetLabel"><i class="fa fa-print"/> Print Label</button>
+                            </div>
+                        </article>
+                    </aside>
+                </section>
+            </main>
+        </section>
+    </t>
+</templates>

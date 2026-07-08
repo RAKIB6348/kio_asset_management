@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="kio_asset_management.AssetListPage" owl="1">
+        <section class="kio_asset_list_page">
+            <header class="kio_list_header">
+                <button class="kio_list_back" type="button" t-on-click="openDashboard" aria-label="Back to dashboard">
+                    <i class="fa fa-arrow-left"/>
+                </button>
+                <div class="kio_list_title_block">
+                    <h1>All Assets</h1>
+                    <nav class="kio_breadcrumb" aria-label="Breadcrumb">
+                        <button type="button" t-on-click="openDashboard">Dashboard</button>
+                        <i class="fa fa-angle-right"/>
+                        <span>Assets</span>
+                        <i class="fa fa-angle-right"/>
+                        <strong>Asset List</strong>
+                    </nav>
+                </div>
+                <div class="kio_asset_header_tools kio_list_tools">
+                    <label class="kio_asset_search kio_list_search">
+                        <i class="fa fa-search"/>
+                        <input type="search" placeholder="Search assets..."/>
+                    </label>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Notifications">
+                        <i class="fa fa-bell-o"/>
+                        <span class="kio_asset_badge">8</span>
+                    </button>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Messages">
+                        <i class="fa fa-envelope-o"/>
+                        <span class="kio_asset_badge">5</span>
+                    </button>
+                    <button class="kio_asset_avatar" type="button" aria-label="User profile"><span>AU</span></button>
+                </div>
+            </header>
+
+            <main class="kio_list_main">
+                <section class="kio_list_kpi_grid" aria-label="Asset summary">
+                    <t t-foreach="assetListKpis" t-as="item" t-key="item.title">
+                        <article t-attf-class="kio_list_kpi_card kio_tone_#{item.tone}">
+                            <span class="kio_kpi_icon"><i t-attf-class="fa #{item.icon}"/></span>
+                            <div>
+                                <h2 t-esc="item.title"/>
+                                <strong t-esc="item.value"/>
+                            </div>
+                        </article>
+                    </t>
+                </section>
+
+                <section class="kio_filter_panel" aria-label="Asset filters">
+                    <label class="kio_filter_search">
+                        <input type="search" placeholder="Search assets..."/>
+                        <i class="fa fa-search"/>
+                    </label>
+                    <label class="kio_filter_field">
+                        <span>Category</span>
+                        <select><option>All Categories</option></select>
+                    </label>
+                    <label class="kio_filter_field">
+                        <span>Status</span>
+                        <select><option>All Status</option></select>
+                    </label>
+                    <label class="kio_filter_field">
+                        <span>Location</span>
+                        <select><option>All Locations</option></select>
+                    </label>
+                    <label class="kio_filter_field">
+                        <span>Assigned To</span>
+                        <select><option>All</option></select>
+                    </label>
+                    <button class="kio_more_filters" type="button"><i class="fa fa-sliders"/> More Filters</button>
+                </section>
+
+                <section class="kio_asset_table_card">
+                    <div class="kio_table_toolbar">
+                        <p>Showing 1 to 10 of 1,248 assets</p>
+                        <div>
+                            <button class="kio_soft_btn" type="button"><i class="fa fa-download"/> Import</button>
+                            <button class="kio_soft_btn" type="button"><i class="fa fa-upload"/> Export</button>
+                            <button class="kio_primary_btn" type="button"><i class="fa fa-plus"/> Add Asset</button>
+                        </div>
+                    </div>
+                    <div class="kio_asset_list_table_wrap">
+                        <table class="kio_asset_list_table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox"/></th>
+                                    <th>Asset Code</th>
+                                    <th>Image</th>
+                                    <th>Asset Name</th>
+                                    <th>Category</th>
+                                    <th>Brand / Model</th>
+                                    <th>Serial Number</th>
+                                    <th>Location</th>
+                                    <th>Assigned To</th>
+                                    <th>Purchase Date</th>
+                                    <th>Purchase Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="assetRows" t-as="row" t-key="row.code">
+                                    <tr>
+                                        <td><input type="checkbox"/></td>
+                                        <td><a href="#" t-esc="row.code"/></td>
+                                        <td><span class="kio_asset_thumb"><i t-attf-class="fa #{row.icon}"/></span></td>
+                                        <td><strong t-esc="row.name"/></td>
+                                        <td t-esc="row.category"/>
+                                        <td t-esc="row.brand"/>
+                                        <td t-esc="row.serial"/>
+                                        <td><i class="fa fa-map-marker"/> <span t-esc="row.location"/><small t-esc="row.locationMeta"/></td>
+                                        <td><span t-esc="row.assignedTo"/><small t-if="row.assignedMeta" t-esc="row.assignedMeta"/></td>
+                                        <td t-esc="row.purchaseDate"/>
+                                        <td t-esc="row.price"/>
+                                        <td><span t-attf-class="kio_status_badge kio_status_#{row.tone}" t-esc="row.status"/></td>
+                                        <td>
+                                            <div class="kio_row_actions">
+                                                <button type="button" aria-label="View asset"><i class="fa fa-eye"/></button>
+                                                <button type="button" aria-label="Edit asset"><i class="fa fa-pencil-square-o"/></button>
+                                                <button type="button" aria-label="More options"><i class="fa fa-ellipsis-v"/></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="kio_asset_pagination">
+                        <div class="kio_page_size">Show <select><option>10</option></select> per page</div>
+                        <div class="kio_page_numbers">
+                            <button type="button"><i class="fa fa-angle-left"/></button>
+                            <button class="is_active" type="button">1</button>
+                            <button type="button">2</button>
+                            <button type="button">3</button>
+                            <button type="button">4</button>
+                            <button type="button">5</button>
+                            <span>...</span>
+                            <button type="button">125</button>
+                            <button type="button"><i class="fa fa-angle-right"/></button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </section>
+    </t>
+</templates>

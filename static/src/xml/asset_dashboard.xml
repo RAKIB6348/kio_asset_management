@@ -2,6 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="kio_asset_management.AssetDashboard" owl="1">
         <div class="kio_asset_dashboard">
+            <t t-if="state.page === 'dashboard'">
             <header class="kio_asset_header">
                 <div class="kio_asset_title_block">
                     <h1>Asset Management Dashboard</h1>
@@ -29,7 +30,7 @@
             <main class="kio_asset_main">
                 <section class="kio_kpi_grid" aria-label="Asset KPIs">
                     <t t-foreach="kpis" t-as="kpi" t-key="kpi.title">
-                        <article t-attf-class="kio_kpi_card kio_tone_#{kpi.tone}">
+                        <article t-attf-class="kio_kpi_card kio_tone_#{kpi.tone} #{kpi.page ? 'kio_kpi_clickable' : ''}" t-on-click="() => this.handleKpiClick(kpi)">
                             <div class="kio_kpi_icon">
                                 <i t-attf-class="fa #{kpi.icon}"/>
                             </div>
@@ -195,6 +196,8 @@
                     <span><i class="fa fa-globe"/> English</span>
                 </div>
             </footer>
+            </t>
+            <t t-if="state.page === 'asset_list'" t-call="kio_asset_management.AssetListPage"/>
         </div>
     </t>
 </templates>

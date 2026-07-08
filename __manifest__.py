@@ -24,9 +24,12 @@ Modern OWL dashboard for tracking assets, assignments, maintenance, and deprecia
     ],
     'assets': {
         'web.assets_backend': [
+            'kio_asset_management/static/src/js/asset_list_data.js',
             'kio_asset_management/static/src/js/asset_dashboard.js',
             'kio_asset_management/static/src/xml/asset_dashboard.xml',
+            'kio_asset_management/static/src/xml/asset_list_page.xml',
             'kio_asset_management/static/src/scss/asset_dashboard.css',
+            'kio_asset_management/static/src/scss/asset_list_page.css',
         ],
     },
     'demo': [

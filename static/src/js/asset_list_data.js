@@ -1,0 +1,23 @@
+/** @odoo-module **/
+
+export const assetListKpis = [
+    { title: "Total Assets", value: "1,248", icon: "fa-cube", tone: "blue" },
+    { title: "Active Assets", value: "1,089", icon: "fa-check", tone: "green" },
+    { title: "Assigned Assets", value: "842", icon: "fa-user", tone: "orange" },
+    { title: "Under Maintenance", value: "52", icon: "fa-wrench", tone: "purple" },
+    { title: "Retired Assets", value: "18", icon: "fa-power-off", tone: "red" },
+    { title: "Scrapped Assets", value: "2", icon: "fa-recycle", tone: "teal" },
+];
+
+export const assetRows = [
+    { code: "AST-0001", icon: "fa-laptop", name: "HP Laptop 840 G5", category: "IT Equipment", brand: "HP / 840 G5", serial: "5CD8254J2M", location: "Head Office", locationMeta: "IT Department", assignedTo: "John Doe", assignedMeta: "IT Department", purchaseDate: "20 May 2023", price: "৳ 65,000", status: "Assigned", tone: "blue" },
+    { code: "AST-0002", icon: "fa-desktop", name: "Dell Monitor 24\"", category: "IT Equipment", brand: "Dell / P2419H", serial: "CN0K8D2M7425", location: "Head Office", locationMeta: "IT Department", assignedTo: "Jane Smith", assignedMeta: "Accounts", purchaseDate: "18 May 2023", price: "৳ 18,000", status: "Assigned", tone: "blue" },
+    { code: "AST-0003", icon: "fa-print", name: "Canon Printer LBP2900", category: "Office Equipment", brand: "Canon / LBP2900", serial: "J8H7Y2K8S1", location: "Chattogram Branch", locationMeta: "Admin", assignedTo: "Michael Brown", assignedMeta: "HR Department", purchaseDate: "17 Apr 2023", price: "৳ 16,500", status: "Assigned", tone: "blue" },
+    { code: "AST-0004", icon: "fa-mobile", name: "iPhone 13", category: "IT Equipment", brand: "Apple / iPhone 13", serial: "F17L9J8K2M", location: "Sylhet Branch", locationMeta: "Sales Department", assignedTo: "Emily Davis", assignedMeta: "Sales", purchaseDate: "15 Apr 2023", price: "৳ 95,000", status: "Assigned", tone: "blue" },
+    { code: "AST-0005", icon: "fa-wheelchair-alt", name: "Office Chair", category: "Furniture", brand: "Nilkamal / Classic", serial: "OC2023A5005", location: "Head Office", locationMeta: "HR Department", assignedTo: "William Wilson", assignedMeta: "Admin", purchaseDate: "14 Apr 2023", price: "৳ 5,200", status: "Available", tone: "green" },
+    { code: "AST-0006", icon: "fa-video-camera", name: "Epson Projector", category: "Office Equipment", brand: "Epson / X41", serial: "X41J25K8S2", location: "Training Room", locationMeta: "Head Office", assignedTo: "-", assignedMeta: "", purchaseDate: "10 Mar 2023", price: "৳ 48,000", status: "Available", tone: "green" },
+    { code: "AST-0007", icon: "fa-snowflake-o", name: "LG AC 1.5 Ton", category: "Electrical Equipment", brand: "LG / S18TN", serial: "AC18TN2023", location: "Head Office", locationMeta: "Administration", assignedTo: "-", assignedMeta: "", purchaseDate: "05 Mar 2023", price: "৳ 52,000", status: "Under Maintenance", tone: "orange" },
+    { code: "AST-0008", icon: "fa-bolt", name: "Generator 5kVA", category: "Electrical Equipment", brand: "Honda / EP5000", serial: "HG5KVA2023", location: "Warehouse", locationMeta: "Head Office", assignedTo: "-", assignedMeta: "", purchaseDate: "28 Feb 2023", price: "৳ 75,000", status: "Under Maintenance", tone: "orange" },
+    { code: "AST-0009", icon: "fa-file-image-o", name: "Scanner Canon LIDE 300", category: "Office Equipment", brand: "Canon / LIDE 300", serial: "LIDE3002022", location: "Chattogram Branch", locationMeta: "Admin", assignedTo: "-", assignedMeta: "", purchaseDate: "12 Jan 2023", price: "৳ 9,500", status: "Retired", tone: "red" },
+    { code: "AST-0010", icon: "fa-volume-up", name: "JBL Speaker", category: "Audio Equipment", brand: "JBL / Flip 5", serial: "JBLF5K2022", location: "Event Management", locationMeta: "Head Office", assignedTo: "-", assignedMeta: "", purchaseDate: "22 Dec 2022", price: "৳ 7,800", status: "Available", tone: "green" },
+];

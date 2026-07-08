@@ -1,14 +1,18 @@
 /** @odoo-module **/
 
-import { Component } from "@odoo/owl";
+import { Component, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { assetListKpis, assetRows } from "./asset_list_data";
 
 export class AssetDashboard extends Component {
     static template = "kio_asset_management.AssetDashboard";
 
     setup() {
+        this.state = useState({ page: "dashboard" });
+        this.assetListKpis = assetListKpis;
+        this.assetRows = assetRows;
         this.kpis = [
-            { title: "Total Assets", value: "1,248", meta: "View all assets", icon: "fa-cube", tone: "blue", action: true },
+            { title: "Total Assets", value: "1,248", meta: "View all assets", icon: "fa-cube", tone: "blue", action: true, page: "asset_list" },
             { title: "Active Assets", value: "1,089", meta: "87.25% of total", icon: "fa-check", tone: "green" },
             { title: "Assigned Assets", value: "842", meta: "67.63% of total", icon: "fa-user", tone: "orange" },
             { title: "Under Maintenance", value: "52", meta: "4.17% of total", icon: "fa-clock-o", tone: "purple" },
@@ -67,6 +71,16 @@ export class AssetDashboard extends Component {
             { label: "Monthly Depreciation", value: "৳ 320,000", icon: "fa-clock-o", tone: "purple" },
             { label: "Yearly Depreciation", value: "৳ 3,840,000", icon: "fa-calendar", tone: "orange" },
         ];
+    }
+
+    handleKpiClick(kpi) {
+        if (kpi.page === "asset_list") {
+            this.state.page = "asset_list";
+        }
+    }
+
+    openDashboard() {
+        this.state.page = "dashboard";
     }
 }
 

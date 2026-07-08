@@ -12,7 +12,7 @@ export class AssetDashboard extends Component {
 
     setup() {
         this.orm = useService("orm");
-        this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false });
+        this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10 });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
         this.addAssetForm = addAssetFormState;
@@ -102,10 +102,63 @@ export class AssetDashboard extends Component {
         }
     }
 
+    get filteredAssetRows() {
+        const term = (this.state.assetSearch || "").trim().toLowerCase();
+        if (!term) {
+            return this.assetRows;
+        }
+        return this.assetRows.filter((row) => [
+            row.code,
+            row.name,
+            row.category,
+            row.brand,
+            row.serial,
+            row.location,
+            row.assignedTo,
+            row.status,
+            row.qtyLabel,
+        ].some((value) => String(value || "").toLowerCase().includes(term)));
+    }
+
+    get displayAssetRows() {
+        const start = (this.state.assetPage - 1) * this.state.assetPageSize;
+        return this.filteredAssetRows.slice(start, start + this.state.assetPageSize);
+    }
+
+    get assetPageCount() {
+        return Math.max(Math.ceil(this.filteredAssetRows.length / this.state.assetPageSize), 1);
+    }
+
     get assetListShowingText() {
-        const total = this.assetListKpis && this.assetListKpis.length ? this.assetListKpis[0].value : this.assetRows.length;
-        const shown = Math.min(this.assetRows.length, 10);
-        return `Showing 1 to ${shown} of ${total} assets`;
+        const total = this.filteredAssetRows.length;
+        if (!total) {
+            return "Showing 0 assets";
+        }
+        const start = ((this.state.assetPage - 1) * this.state.assetPageSize) + 1;
+        const end = Math.min(start + this.state.assetPageSize - 1, total);
+        return `Showing ${start} to ${end} of ${total} assets`;
+    }
+
+    onAssetSearch(event) {
+        this.state.assetSearch = event.target.value;
+        this.state.assetPage = 1;
+    }
+
+    setAssetPage(page) {
+        this.state.assetPage = Math.min(Math.max(page, 1), this.assetPageCount);
+    }
+
+    nextAssetPage() {
+        this.setAssetPage(this.state.assetPage + 1);
+    }
+
+    previousAssetPage() {
+        this.setAssetPage(this.state.assetPage - 1);
+    }
+
+    onAssetPageSizeChange(event) {
+        this.state.assetPageSize = Number(event.target.value) || 10;
+        this.state.assetPage = 1;
     }
 
     handleKpiClick(kpi) {

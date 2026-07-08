@@ -19,7 +19,7 @@
                 <div class="kio_asset_header_tools kio_list_tools">
                     <label class="kio_asset_search kio_list_search">
                         <i class="fa fa-search"/>
-                        <input type="search" placeholder="Search assets..."/>
+                        <input type="search" placeholder="Search assets..." t-att-value="state.assetSearch" t-on-input="onAssetSearch"/>
                     </label>
                     <button class="kio_asset_icon_btn" type="button" aria-label="Notifications">
                         <i class="fa fa-bell-o"/>
@@ -48,7 +48,7 @@
 
                 <section class="kio_filter_panel" aria-label="Asset filters">
                     <label class="kio_filter_search">
-                        <input type="search" placeholder="Search assets..."/>
+                        <input type="search" placeholder="Search assets..." t-att-value="state.assetSearch" t-on-input="onAssetSearch"/>
                         <i class="fa fa-search"/>
                     </label>
                     <label class="kio_filter_field">
@@ -87,6 +87,7 @@
                                     <th>Asset Code</th>
                                     <th>Image</th>
                                     <th>Asset Name</th>
+                                    <th>Qty</th>
                                     <th>Category</th>
                                     <th>Brand / Model</th>
                                     <th>Serial Number</th>
@@ -99,12 +100,13 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="assetRows" t-as="row" t-key="row.code">
+                                <t t-foreach="displayAssetRows" t-as="row" t-key="row.rowKey || row.code">
                                     <tr>
                                         <td><input type="checkbox"/></td>
                                         <td><a href="#" t-esc="row.code"/></td>
                                         <td><span class="kio_asset_thumb"><i t-attf-class="fa #{row.icon}"/></span></td>
                                         <td><strong t-esc="row.name"/></td>
+                                        <td><span class="kio_qty_badge" t-esc="row.qtyLabel || '1/1'"/></td>
                                         <td t-esc="row.category"/>
                                         <td t-esc="row.brand"/>
                                         <td t-esc="row.serial"/>
@@ -126,17 +128,15 @@
                         </table>
                     </div>
                     <div class="kio_asset_pagination">
-                        <div class="kio_page_size">Show <select><option>10</option></select> per page</div>
+                        <div class="kio_page_size">Show <select t-on-change="onAssetPageSizeChange"><option>10</option><option>25</option><option>50</option></select> per page</div>
                         <div class="kio_page_numbers">
-                            <button type="button"><i class="fa fa-angle-left"/></button>
-                            <button class="is_active" type="button">1</button>
-                            <button type="button">2</button>
-                            <button type="button">3</button>
-                            <button type="button">4</button>
-                            <button type="button">5</button>
-                            <span>...</span>
-                            <button type="button">125</button>
-                            <button type="button"><i class="fa fa-angle-right"/></button>
+                            <button type="button" t-on-click="previousAssetPage"><i class="fa fa-angle-left"/></button>
+                            <button t-att-class="state.assetPage === 1 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(1)">1</button>
+                            <button t-if="assetPageCount >= 2" t-att-class="state.assetPage === 2 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(2)">2</button>
+                            <button t-if="assetPageCount >= 3" t-att-class="state.assetPage === 3 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(3)">3</button>
+                            <span t-if="assetPageCount > 4">...</span>
+                            <button t-if="assetPageCount > 3" t-att-class="state.assetPage === assetPageCount ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(assetPageCount)" t-esc="assetPageCount"/>
+                            <button type="button" t-on-click="nextAssetPage"><i class="fa fa-angle-right"/></button>
                         </div>
                     </div>
                 </section>

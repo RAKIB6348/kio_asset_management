@@ -11,9 +11,10 @@ class KioAssetDashboardService(models.AbstractModel):
     def get_asset_dashboard_data(self):
         products = self._get_asset_products()
         purchase_map = self._get_purchase_financials(products)
-        rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products[:80]]
-        details = {row['code']: self._row_to_details(row) for row in rows}
-        total_assets = len(products)
+        base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products[:80]]
+        rows = self._expand_rows_by_quantity(base_rows)
+        details = {row['code']: self._row_to_details(row) for row in base_rows}
+        total_assets = len(rows)
         active_assets = len([row for row in rows if row['status'] != 'Retired'])
         assigned_assets = len([row for row in rows if row['assignedTo'] != '-'])
         maintenance_assets = len([row for row in rows if row['status'] == 'Under Maintenance'])
@@ -56,6 +57,7 @@ class KioAssetDashboardService(models.AbstractModel):
         for line in lines:
             product_data = result.setdefault(line.product_id.id, {
                 'purchase_value': 0.0,
+                'quantity': 0.0,
                 'purchase_date': False,
                 'vendor': '',
                 'invoice': '',
@@ -63,6 +65,7 @@ class KioAssetDashboardService(models.AbstractModel):
             })
             sign = -1.0 if line.move_id.move_type == 'in_refund' else 1.0
             product_data['purchase_value'] += sign * line.price_subtotal
+            product_data['quantity'] += sign * line.quantity
             if not product_data['purchase_date']:
                 product_data.update({
                     'purchase_date': line.move_id.invoice_date or line.move_id.date,
@@ -74,6 +77,10 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _product_to_asset_row(self, product, financial):
         purchase_value = financial.get('purchase_value') or product.standard_price or 0.0
+        quantity = int(financial.get('quantity') or 1)
+        if quantity < 1:
+            quantity = 1
+        unit_value = purchase_value / quantity if quantity else purchase_value
         purchase_date = financial.get('purchase_date')
         code = product.default_code or 'AST-%05d' % product.id
         return {
@@ -89,7 +96,13 @@ class KioAssetDashboardService(models.AbstractModel):
             'assignedTo': '-',
             'assignedMeta': '',
             'purchaseDate': self._format_date(purchase_date),
-            'price': self._format_money(purchase_value),
+            'price': self._format_money(unit_value),
+            'totalPrice': self._format_money(purchase_value),
+            'quantity': quantity,
+            'qtyIndex': 1,
+            'qtyTotal': quantity,
+            'qtyLabel': '1/%s' % quantity,
+            'unitPrice': unit_value,
             'status': 'Available',
             'tone': 'green',
             'purchaseValue': purchase_value,
@@ -97,6 +110,23 @@ class KioAssetDashboardService(models.AbstractModel):
             'invoiceNumber': financial.get('invoice') or '',
             'poNumber': financial.get('po_number') or '',
         }
+
+    def _expand_rows_by_quantity(self, rows):
+        expanded = []
+        for row in rows:
+            quantity = row.get('quantity') or 1
+            if quantity < 1:
+                quantity = 1
+            for index in range(1, quantity + 1):
+                expanded_row = dict(row)
+                expanded_row.update({
+                    'rowKey': '%s-%s' % (row['code'], index),
+                    'qtyIndex': index,
+                    'qtyTotal': quantity,
+                    'qtyLabel': '%s/%s' % (index, quantity),
+                })
+                expanded.append(expanded_row)
+        return expanded
 
     def _row_to_details(self, row):
         return {
@@ -118,9 +148,9 @@ class KioAssetDashboardService(models.AbstractModel):
             'invoiceNumber': row.get('invoiceNumber') or '-',
             'poNumber': row.get('poNumber') or '-',
             'purchaseDate': row['purchaseDate'],
-            'purchasePrice': row['price'],
-            'purchasePriceShort': row['price'],
-            'currentValue': row['price'],
+            'purchasePrice': row.get('totalPrice') or row['price'],
+            'purchasePriceShort': row.get('totalPrice') or row['price'],
+            'currentValue': row.get('totalPrice') or row['price'],
             'accumulatedDepreciation': self._format_money(0.0),
             'warrantyExpiry': '-',
             'expectedReturn': '-',

@@ -278,6 +278,20 @@
     font-weight: 750;
 }
 
+.kio_qty_badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    min-height: 24px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    color: #0c60d0;
+    background: #e2efff;
+    font-size: 12px;
+    font-weight: 850;
+}
+
 .kio_asset_list_table small {
     display: block;
     margin-top: 3px;

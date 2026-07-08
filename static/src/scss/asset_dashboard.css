@@ -1,8 +1,18 @@
 .kio_asset_dashboard {
-    min-height: 100vh;
+    width: 100%;
+    min-height: calc(100vh - 46px);
+    max-height: calc(100vh - 46px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
     background: #f4f7fb;
     color: #0f1f3d;
     font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.kio_asset_dashboard,
+.kio_asset_dashboard * {
+    box-sizing: border-box;
 }
 
 .kio_asset_header {
@@ -109,7 +119,9 @@
 
 .kio_asset_main {
     width: 100%;
-    padding: 24px 28px 0;
+    min-height: 100%;
+    overflow: visible;
+    padding: 24px 28px 60px;
 }
 
 .kio_kpi_grid {
@@ -224,6 +236,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+    overflow: visible;
 }
 
 .kio_panel {
@@ -415,7 +428,9 @@
 }
 
 .kio_table_wrap {
+    width: 100%;
     overflow-x: auto;
+    overflow-y: visible;
 }
 
 .kio_table {

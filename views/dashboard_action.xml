@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_asset_management_dashboard" model="ir.actions.client">
+            <field name="name">Asset Management Dashboard</field>
+            <field name="tag">kio_asset_management.asset_dashboard</field>
+            <field name="target">current</field>
+        </record>
+
+        <menuitem id="menu_asset_management_root"
+                  name="Asset Management"
+                  sequence="10"/>
+
+        <menuitem id="menu_asset_management_dashboard"
+                  name="Dashboard"
+                  parent="menu_asset_management_root"
+                  action="action_asset_management_dashboard"
+                  sequence="10"/>
+    </data>
+</odoo>

@@ -2,33 +2,36 @@
 {
     'name': "kio_asset_management",
 
-    'summary': "Short (1 phrase/line) summary of the module's purpose",
+    'summary': "Enterprise asset management dashboard",
 
     'description': """
-Long description of module's purpose
+Modern OWL dashboard for tracking assets, assignments, maintenance, and depreciation.
     """,
 
-    'author': "My Company",
-    'website': "https://www.yourcompany.com",
+    'author': "KIO",
+    'website': "https://www.kio.com",
 
-    # Categories can be used to filter modules in modules listing
-    # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
-    # for the full list
-    'category': 'Uncategorized',
+    'category': 'Operations/Inventory',
     'version': '0.1',
 
-    # any module necessary for this one to work correctly
-    'depends': ['base'],
+    'depends': ['base', 'web'],
 
-    # always loaded
     'data': [
         # 'security/ir.model.access.csv',
+        'views/dashboard_action.xml',
         'views/views.xml',
         'views/templates.xml',
     ],
-    # only loaded in demonstration mode
+    'assets': {
+        'web.assets_backend': [
+            'kio_asset_management/static/src/js/asset_dashboard.js',
+            'kio_asset_management/static/src/xml/asset_dashboard.xml',
+            'kio_asset_management/static/src/scss/asset_dashboard.css',
+        ],
+    },
     'demo': [
         'demo/demo.xml',
     ],
+    'application': True,
+    'installable': True,
 }
-

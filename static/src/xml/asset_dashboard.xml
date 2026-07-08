@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="kio_asset_management.AssetDashboard" owl="1">
+        <div class="kio_asset_dashboard">
+            <header class="kio_asset_header">
+                <div class="kio_asset_title_block">
+                    <h1>Asset Management Dashboard</h1>
+                    <p>Overview of your asset management</p>
+                </div>
+                <div class="kio_asset_header_tools">
+                    <label class="kio_asset_search">
+                        <i class="fa fa-search"/>
+                        <input type="search" placeholder="Search assets, requests, locations..."/>
+                    </label>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Notifications">
+                        <i class="fa fa-bell-o"/>
+                        <span class="kio_asset_badge">8</span>
+                    </button>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Messages">
+                        <i class="fa fa-envelope-o"/>
+                        <span class="kio_asset_badge">5</span>
+                    </button>
+                    <button class="kio_asset_avatar" type="button" aria-label="User profile">
+                        <span>AU</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="kio_asset_main">
+                <section class="kio_kpi_grid" aria-label="Asset KPIs">
+                    <t t-foreach="kpis" t-as="kpi" t-key="kpi.title">
+                        <article t-attf-class="kio_kpi_card kio_tone_#{kpi.tone}">
+                            <div class="kio_kpi_icon">
+                                <i t-attf-class="fa #{kpi.icon}"/>
+                            </div>
+                            <div class="kio_kpi_body">
+                                <h2 t-esc="kpi.title"/>
+                                <strong t-esc="kpi.value"/>
+                                <p t-att-class="kpi.action ? 'kio_link_meta' : ''">
+                                    <span t-esc="kpi.meta"/>
+                                    <i t-if="kpi.action" class="fa fa-angle-right"/>
+                                </p>
+                            </div>
+                        </article>
+                    </t>
+                </section>
+
+                <section class="kio_action_row" aria-label="Quick actions">
+                    <t t-foreach="actions" t-as="action" t-key="action.label">
+                        <button t-attf-class="kio_action_btn kio_action_#{action.tone}" type="button">
+                            <i t-attf-class="fa #{action.icon}"/>
+                            <span t-esc="action.label"/>
+                        </button>
+                    </t>
+                </section>
+
+                <section class="kio_dashboard_grid">
+                    <article class="kio_panel">
+                        <div class="kio_panel_header">
+                            <h2>Asset Status Overview</h2>
+                        </div>
+                        <div class="kio_status_wrap">
+                            <div class="kio_donut_chart" aria-label="Asset status donut chart">
+                                <div>
+                                    <strong>1,248</strong>
+                                    <span>Total</span>
+                                </div>
+                            </div>
+                            <div class="kio_status_legend">
+                                <t t-foreach="statuses" t-as="status" t-key="status.label">
+                                    <div class="kio_legend_item">
+                                        <span t-attf-class="kio_dot kio_dot_#{status.tone}"/>
+                                        <span class="kio_legend_label" t-esc="status.label"/>
+                                        <strong><t t-esc="status.value"/> <small>(<t t-esc="status.percent"/>)</small></strong>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="kio_panel">
+                        <div class="kio_panel_header">
+                            <h2>Assets by Location</h2>
+                            <button type="button">View all</button>
+                        </div>
+                        <div class="kio_bar_chart">
+                            <div class="kio_y_axis">
+                                <span>400</span>
+                                <span>300</span>
+                                <span>200</span>
+                                <span>100</span>
+                                <span>0</span>
+                            </div>
+                            <div class="kio_bars">
+                                <t t-foreach="locations" t-as="location" t-key="location.label">
+                                    <div class="kio_bar_item">
+                                        <strong t-esc="location.value"/>
+                                        <span t-attf-class="kio_bar kio_bar_#{location.tone}" t-att-style="'height:' + ((location.value / 420) * 78 + 8) + '%'"/>
+                                        <small t-esc="location.label"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="kio_panel">
+                        <div class="kio_panel_header">
+                            <h2>Maintenance Requests</h2>
+                            <button type="button">View all</button>
+                        </div>
+                        <div class="kio_count_list">
+                            <t t-foreach="maintenanceCounts" t-as="item" t-key="item.label">
+                                <div class="kio_count_item">
+                                    <span t-attf-class="kio_dot kio_dot_#{item.tone}"/>
+                                    <span t-esc="item.label"/>
+                                    <strong t-esc="item.value"/>
+                                </div>
+                            </t>
+                        </div>
+                    </article>
+
+                    <article class="kio_panel">
+                        <div class="kio_panel_header">
+                            <h2>Recent Assigned Assets</h2>
+                            <button type="button">View all</button>
+                        </div>
+                        <div class="kio_table_wrap">
+                            <table class="kio_table">
+                                <thead>
+                                    <tr><th>Asset</th><th>Assigned To</th><th>Department</th><th>Assign Date</th><th>Status</th></tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="assignedAssets" t-as="row" t-key="row.code">
+                                        <tr>
+                                            <td><strong t-esc="row.asset"/><span t-esc="row.code"/></td>
+                                            <td t-esc="row.assignedTo"/>
+                                            <td t-esc="row.department"/>
+                                            <td t-esc="row.date"/>
+                                            <td><span class="kio_pill kio_pill_green" t-esc="row.status"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="kio_panel">
+                        <div class="kio_panel_header">
+                            <h2>Recent Maintenance Requests</h2>
+                            <button type="button">View all</button>
+                        </div>
+                        <div class="kio_table_wrap">
+                            <table class="kio_table">
+                                <thead>
+                                    <tr><th>Request</th><th>Asset</th><th>Requested By</th><th>Status</th></tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="maintenanceRequests" t-as="row" t-key="row.request">
+                                        <tr>
+                                            <td><strong t-esc="row.request"/><span t-esc="row.date"/></td>
+                                            <td><strong t-esc="row.asset"/><span t-esc="row.code"/></td>
+                                            <td t-esc="row.requestedBy"/>
+                                            <td><span t-attf-class="kio_pill kio_pill_#{row.tone}" t-esc="row.status"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+
+                    <article class="kio_panel">
+                        <div class="kio_panel_header">
+                            <h2>Depreciation Summary</h2>
+                            <button type="button">View all</button>
+                        </div>
+                        <div class="kio_summary_list">
+                            <t t-foreach="depreciationSummary" t-as="item" t-key="item.label">
+                                <div class="kio_summary_item">
+                                    <span t-attf-class="kio_summary_icon kio_tone_#{item.tone}">
+                                        <i t-attf-class="fa #{item.icon}"/>
+                                    </span>
+                                    <span t-esc="item.label"/>
+                                    <strong t-attf-class="kio_value_#{item.tone}" t-esc="item.value"/>
+                                </div>
+                            </t>
+                        </div>
+                    </article>
+                </section>
+            </main>
+
+            <footer class="kio_asset_footer">
+                <span>© 2024 Asset Management System. All rights reserved.</span>
+                <div>
+                    <span>v1.0.0</span>
+                    <span><i class="fa fa-globe"/> English</span>
+                </div>
+            </footer>
+        </div>
+    </t>
+</templates>

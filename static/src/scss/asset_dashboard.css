@@ -1,0 +1,672 @@
+.kio_asset_dashboard {
+    min-height: 100vh;
+    background: #f4f7fb;
+    color: #0f1f3d;
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.kio_asset_header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px 28px;
+    background: rgba(255, 255, 255, 0.94);
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 10px 32px rgba(15, 31, 61, 0.05);
+    backdrop-filter: blur(14px);
+}
+
+.kio_asset_title_block h1 {
+    margin: 0;
+    color: #0a1530;
+    font-size: 26px;
+    font-weight: 750;
+    letter-spacing: 0;
+}
+
+.kio_asset_title_block p {
+    margin: 5px 0 0;
+    color: #60708b;
+    font-size: 14px;
+}
+
+.kio_asset_header_tools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.kio_asset_search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 360px;
+    height: 42px;
+    padding: 0 14px;
+    background: #ffffff;
+    border: 1px solid #d9e2ef;
+    border-radius: 10px;
+    color: #25446f;
+    box-shadow: 0 8px 24px rgba(20, 40, 80, 0.04);
+}
+
+.kio_asset_search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: #10213d;
+    font-size: 14px;
+    background: transparent;
+}
+
+.kio_asset_search input::placeholder {
+    color: #9aa8bb;
+}
+
+.kio_asset_icon_btn,
+.kio_asset_avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    color: #173660;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(20, 40, 80, 0.08);
+}
+
+.kio_asset_badge {
+    position: absolute;
+    top: -5px;
+    right: -3px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ff2f42;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+}
+
+.kio_asset_avatar {
+    background: linear-gradient(135deg, #dfe8f6, #ffffff);
+}
+
+.kio_asset_avatar span {
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.kio_asset_main {
+    width: 100%;
+    padding: 24px 28px 0;
+}
+
+.kio_kpi_grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(148px, 1fr));
+    gap: 14px;
+}
+
+.kio_kpi_card,
+.kio_panel {
+    background: #ffffff;
+    border: 1px solid #dfe7f2;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 31, 61, 0.07);
+}
+
+.kio_kpi_card {
+    display: flex;
+    gap: 14px;
+    min-height: 130px;
+    padding: 18px 16px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.kio_kpi_card:hover {
+    transform: translateY(-3px);
+    border-color: #bfd1e8;
+    box-shadow: 0 16px 40px rgba(15, 31, 61, 0.12);
+}
+
+.kio_kpi_icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #ffffff;
+    font-size: 20px;
+    box-shadow: 0 10px 20px rgba(15, 31, 61, 0.16);
+}
+
+.kio_kpi_body {
+    min-width: 0;
+}
+
+.kio_kpi_body h2 {
+    margin: 3px 0 14px;
+    color: #243657;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.kio_kpi_body strong {
+    display: block;
+    color: #10213f;
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.kio_kpi_body p {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 20px 0 0;
+    color: #60708b;
+    font-size: 13px;
+}
+
+.kio_kpi_body .kio_link_meta {
+    color: #0867df;
+    font-weight: 650;
+}
+
+.kio_action_row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(170px, 1fr));
+    gap: 16px;
+    justify-content: end;
+    max-width: 890px;
+    margin: 22px 0 16px auto;
+}
+
+.kio_action_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 52px;
+    border: 0;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 12px 24px rgba(15, 31, 61, 0.13);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.kio_action_btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 28px rgba(15, 31, 61, 0.18);
+}
+
+.kio_action_btn i {
+    font-size: 18px;
+}
+
+.kio_dashboard_grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.kio_panel {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.kio_panel_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 18px 12px;
+}
+
+.kio_panel_header h2 {
+    margin: 0;
+    color: #0d1b36;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.kio_panel_header button {
+    border: 0;
+    color: #0667dd;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.kio_status_wrap {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 22px;
+    align-items: center;
+    padding: 12px 18px 24px;
+}
+
+.kio_donut_chart {
+    display: grid;
+    place-items: center;
+    width: 210px;
+    height: 210px;
+    border-radius: 50%;
+    background: conic-gradient(#2fbe68 0 45%, #3f86ed 45% 67%, #f59a23 67% 72%, #9060df 72% 92%, #ef4b5b 92% 99%, #8aa0bf 99% 100%);
+}
+
+.kio_donut_chart > div {
+    display: grid;
+    place-items: center;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px #e8eef7;
+}
+
+.kio_donut_chart strong {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.kio_donut_chart span {
+    color: #60708b;
+    font-size: 13px;
+}
+
+.kio_status_legend,
+.kio_count_list,
+.kio_summary_list {
+    display: grid;
+}
+
+.kio_status_legend {
+    gap: 16px;
+}
+
+.kio_legend_item,
+.kio_count_item,
+.kio_summary_item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.kio_legend_item {
+    color: #253a5c;
+    font-size: 13px;
+}
+
+.kio_legend_item .kio_legend_label {
+    flex: 1;
+}
+
+.kio_legend_item strong {
+    color: #10213f;
+    white-space: nowrap;
+}
+
+.kio_legend_item small {
+    color: #60708b;
+    font-size: 12px;
+}
+
+.kio_dot {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.kio_bar_chart {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    min-height: 254px;
+    padding: 12px 18px 22px;
+}
+
+.kio_y_axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #536780;
+    font-size: 13px;
+    padding-bottom: 34px;
+}
+
+.kio_bars {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(52px, 1fr));
+    align-items: end;
+    gap: 18px;
+    border-bottom: 1px solid #dde6f1;
+    background: repeating-linear-gradient(to bottom, #ffffff 0, #ffffff 50px, #edf2f8 51px);
+}
+
+.kio_bar_item {
+    display: grid;
+    grid-template-rows: 24px 1fr 36px;
+    justify-items: center;
+    align-items: end;
+    height: 100%;
+    color: #233858;
+}
+
+.kio_bar_item strong {
+    font-size: 14px;
+}
+
+.kio_bar_item small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    color: #243b5e;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.15;
+}
+
+.kio_bar {
+    width: 58px;
+    max-width: 70%;
+    min-height: 22px;
+    border-radius: 6px 6px 0 0;
+}
+
+.kio_count_list {
+    padding: 8px 18px 18px;
+}
+
+.kio_count_item {
+    min-height: 52px;
+    border-bottom: 1px solid #e6edf6;
+    color: #253a5c;
+    font-size: 14px;
+}
+
+.kio_count_item span:nth-child(2) {
+    flex: 1;
+}
+
+.kio_count_item strong {
+    color: #10213f;
+    font-size: 16px;
+}
+
+.kio_table_wrap {
+    overflow-x: auto;
+}
+
+.kio_table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 620px;
+}
+
+.kio_table th,
+.kio_table td {
+    padding: 13px 18px;
+    border-top: 1px solid #e6edf6;
+    color: #243957;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.kio_table th {
+    color: #273752;
+    background: #fbfdff;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.kio_table td strong {
+    display: block;
+    color: #162944;
+    font-weight: 750;
+}
+
+.kio_table td span {
+    display: block;
+    margin-top: 4px;
+    color: #61718a;
+    font-size: 12px;
+}
+
+.kio_pill {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    min-height: 24px;
+    margin: 0 !important;
+    padding: 3px 9px;
+    border-radius: 8px;
+    font-size: 12px !important;
+    font-weight: 750;
+}
+
+.kio_summary_list {
+    padding: 8px 18px 18px;
+}
+
+.kio_summary_item {
+    min-height: 58px;
+    border-bottom: 1px solid #e6edf6;
+    color: #526580;
+    font-size: 14px;
+}
+
+.kio_summary_item > span:nth-child(2) {
+    flex: 1;
+}
+
+.kio_summary_item strong {
+    color: #10213f;
+    font-size: 16px;
+    white-space: nowrap;
+}
+
+.kio_summary_icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #eef4fb;
+    color: #1e4b84;
+}
+
+.kio_asset_footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 28px;
+    color: #60708b;
+    font-size: 13px;
+}
+
+.kio_asset_footer div {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.kio_tone_blue .kio_kpi_icon,
+.kio_action_blue,
+.kio_bar_blue,
+.kio_dot_blue {
+    background: linear-gradient(135deg, #2082ff, #075bd8);
+}
+
+.kio_tone_green .kio_kpi_icon,
+.kio_action_green,
+.kio_dot_green {
+    background: linear-gradient(135deg, #35c86f, #13a344);
+}
+
+.kio_tone_orange .kio_kpi_icon,
+.kio_action_orange,
+.kio_dot_orange {
+    background: linear-gradient(135deg, #ffb12f, #ff7a13);
+}
+
+.kio_tone_purple .kio_kpi_icon,
+.kio_action_purple,
+.kio_bar_purple,
+.kio_dot_purple {
+    background: linear-gradient(135deg, #a75cf6, #7039bf);
+}
+
+.kio_tone_red .kio_kpi_icon,
+.kio_bar_red,
+.kio_dot_red {
+    background: linear-gradient(135deg, #ff5967, #ee2f43);
+}
+
+.kio_tone_teal .kio_kpi_icon,
+.kio_bar_teal {
+    background: linear-gradient(135deg, #3db9c2, #168a9d);
+}
+
+.kio_tone_violet .kio_kpi_icon {
+    background: linear-gradient(135deg, #8264d8, #5b3eb3);
+}
+
+.kio_tone_lime .kio_kpi_icon {
+    background: linear-gradient(135deg, #7bc947, #4ca829);
+}
+
+.kio_bar_amber {
+    background: linear-gradient(135deg, #ffc33d, #f5a91f);
+}
+
+.kio_dot_slate {
+    background: #8aa0bf;
+}
+
+.kio_tone_slate {
+    color: #496079;
+}
+
+.kio_pill_green {
+    color: #12843a !important;
+    background: #dff7e7;
+}
+
+.kio_pill_blue {
+    color: #0c60d0 !important;
+    background: #e2efff;
+}
+
+.kio_pill_purple {
+    color: #743cc3 !important;
+    background: #f0e7ff;
+}
+
+.kio_pill_orange {
+    color: #be6707 !important;
+    background: #fff0d9;
+}
+
+.kio_value_red {
+    color: #e73346 !important;
+}
+
+.kio_value_green {
+    color: #13a344 !important;
+}
+
+@media (max-width: 1500px) {
+    .kio_kpi_grid {
+        grid-template-columns: repeat(4, minmax(170px, 1fr));
+    }
+}
+
+@media (max-width: 1180px) {
+    .kio_asset_header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .kio_asset_header_tools,
+    .kio_asset_search {
+        width: 100%;
+    }
+
+    .kio_dashboard_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .kio_asset_main,
+    .kio_asset_header,
+    .kio_asset_footer {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .kio_kpi_grid,
+    .kio_dashboard_grid,
+    .kio_action_row {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_action_row {
+        max-width: none;
+        margin-left: 0;
+    }
+
+    .kio_status_wrap {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+}
+
+@media (max-width: 620px) {
+    .kio_asset_header_tools {
+        display: grid;
+        grid-template-columns: 1fr repeat(3, 42px);
+    }
+
+    .kio_asset_title_block h1 {
+        font-size: 22px;
+    }
+
+    .kio_asset_search {
+        min-width: 0;
+    }
+
+    .kio_asset_footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .kio_bars {
+        gap: 8px;
+    }
+}

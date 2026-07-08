@@ -1,0 +1,8 @@
+# Python pycache
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Odoo specific
+*.log

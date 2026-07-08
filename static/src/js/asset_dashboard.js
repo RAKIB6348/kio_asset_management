@@ -3,14 +3,16 @@
 import { Component, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { assetListKpis, assetRows } from "./asset_list_data";
+import { addAssetFormState } from "./add_asset_data";
 
 export class AssetDashboard extends Component {
     static template = "kio_asset_management.AssetDashboard";
 
     setup() {
-        this.state = useState({ page: "dashboard" });
+        this.state = useState({ page: "dashboard", previousPage: "dashboard" });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
+        this.addAssetForm = addAssetFormState;
         this.kpis = [
             { title: "Total Assets", value: "1,248", meta: "View all assets", icon: "fa-cube", tone: "blue", action: true, page: "asset_list" },
             { title: "Active Assets", value: "1,089", meta: "87.25% of total", icon: "fa-check", tone: "green" },
@@ -22,7 +24,7 @@ export class AssetDashboard extends Component {
             { title: "Current Asset Value", value: "৳ 15.90M", meta: "View details", icon: "fa-line-chart", tone: "lime", action: true },
         ];
         this.actions = [
-            { label: "Add Asset", icon: "fa-plus", tone: "blue" },
+            { label: "Add Asset", icon: "fa-plus", tone: "blue", page: "add_asset" },
             { label: "Assign Asset", icon: "fa-user-plus", tone: "green" },
             { label: "Maintenance Request", icon: "fa-wrench", tone: "orange" },
             { label: "View Reports", icon: "fa-bar-chart", tone: "purple" },
@@ -77,6 +79,27 @@ export class AssetDashboard extends Component {
         if (kpi.page === "asset_list") {
             this.state.page = "asset_list";
         }
+    }
+
+    handleQuickAction(action) {
+        if (action.page === "add_asset") {
+            this.openAddAsset();
+        }
+    }
+
+    openAddAsset() {
+        this.state.previousPage = this.state.page;
+        this.state.page = "add_asset";
+    }
+
+    closeAddAsset() {
+        this.state.page = this.state.previousPage || "dashboard";
+    }
+
+    saveAsset() {
+        // Placeholder hook for future ORM/RPC persistence.
+        console.info("Save Asset", this.addAssetForm);
+        this.closeAddAsset();
     }
 
     openDashboard() {

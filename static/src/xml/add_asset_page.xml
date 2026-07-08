@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="kio_asset_management.AddAssetPage" owl="1">
+        <section class="kio_add_asset_page">
+            <header class="kio_add_header">
+                <button class="kio_list_back" type="button" t-on-click="closeAddAsset" aria-label="Back">
+                    <i class="fa fa-arrow-left"/>
+                </button>
+                <div class="kio_list_title_block">
+                    <h1>Add New Asset</h1>
+                    <nav class="kio_breadcrumb" aria-label="Breadcrumb">
+                        <button type="button" t-on-click="openDashboard">Dashboard</button>
+                        <i class="fa fa-angle-right"/>
+                        <span>Assets</span>
+                        <i class="fa fa-angle-right"/>
+                        <strong>Add New Asset</strong>
+                    </nav>
+                </div>
+                <div class="kio_asset_header_tools kio_list_tools">
+                    <label class="kio_asset_search kio_list_search">
+                        <i class="fa fa-search"/>
+                        <input type="search" placeholder="Search assets..."/>
+                    </label>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Notifications"><i class="fa fa-bell-o"/><span class="kio_asset_badge">8</span></button>
+                    <button class="kio_asset_icon_btn" type="button" aria-label="Messages"><i class="fa fa-envelope-o"/><span class="kio_asset_badge">5</span></button>
+                    <button class="kio_asset_avatar" type="button" aria-label="User profile"><span>AU</span></button>
+                </div>
+            </header>
+
+            <main class="kio_add_main">
+                <div class="kio_add_actions">
+                    <button class="kio_cancel_btn" type="button" t-on-click="closeAddAsset">Cancel</button>
+                    <button class="kio_save_btn" type="button" t-on-click="saveAsset"><i class="fa fa-floppy-o"/> Save Asset</button>
+                </div>
+
+                <section class="kio_add_top_grid">
+                    <article class="kio_form_card kio_basic_card">
+                        <div class="kio_form_card_header"><i class="fa fa-list-alt"/><h2>Basic Information</h2></div>
+                        <div class="kio_form_grid kio_form_grid_4">
+                            <label class="kio_form_field"><span>Asset Code <b>*</b></span><input t-att-value="addAssetForm.assetCode"/></label>
+                            <label class="kio_form_field"><span>Asset Name <b>*</b></span><input t-att-value="addAssetForm.assetName"/></label>
+                            <label class="kio_form_field"><span>Asset Category <b>*</b></span><select><option t-esc="addAssetForm.category"/></select></label>
+                            <label class="kio_form_field"><span>Brand / Model</span><select><option t-esc="addAssetForm.brandModel"/></select></label>
+                            <label class="kio_form_field"><span>Serial Number <b>*</b></span><input t-att-value="addAssetForm.serialNumber"/></label>
+                            <label class="kio_form_field"><span>Barcode / QR Code</span><input t-att-value="addAssetForm.barcode"/></label>
+                            <label class="kio_form_field"><span>Status <b>*</b></span><select><option t-esc="addAssetForm.status"/></select></label>
+                            <label class="kio_form_field"><span>Asset Type <b>*</b></span><select><option t-esc="addAssetForm.assetType"/></select></label>
+                            <label class="kio_form_field"><span>Purchase Date <b>*</b></span><div class="kio_input_icon"><input t-att-value="addAssetForm.purchaseDate"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Purchase Price (৳) <b>*</b></span><input t-att-value="addAssetForm.purchasePrice"/></label>
+                            <label class="kio_form_field"><span>Warranty Expiry Date</span><div class="kio_input_icon"><input t-att-value="addAssetForm.warrantyExpiry"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Condition</span><select><option t-esc="addAssetForm.condition"/></select></label>
+                            <label class="kio_form_field kio_span_4"><span>Description</span><textarea><t t-esc="addAssetForm.description"/></textarea></label>
+                        </div>
+                    </article>
+
+                    <article class="kio_form_card kio_image_card">
+                        <div class="kio_form_card_header"><i class="fa fa-picture-o"/><h2>Asset Image</h2></div>
+                        <div class="kio_upload_area">
+                            <div class="kio_upload_preview"><i class="fa fa-laptop"/><span><i class="fa fa-camera"/></span></div>
+                            <p>Click to upload or drag and drop</p>
+                            <small>PNG, JPG up to 5MB</small>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="kio_form_three_grid">
+                    <article class="kio_form_card">
+                        <div class="kio_form_card_header"><i class="fa fa-map-marker"/><h2>Location Information</h2></div>
+                        <div class="kio_form_grid kio_form_grid_2">
+                            <label class="kio_form_field"><span>Location <b>*</b></span><select><option t-esc="addAssetForm.location"/></select></label>
+                            <label class="kio_form_field"><span>Building / Floor</span><select><option t-esc="addAssetForm.buildingFloor"/></select></label>
+                            <label class="kio_form_field"><span>Room / Area</span><input t-att-value="addAssetForm.roomArea"/></label>
+                            <label class="kio_form_field"><span>Department</span><select><option t-esc="addAssetForm.department"/></select></label>
+                        </div>
+                    </article>
+                    <article class="kio_form_card">
+                        <div class="kio_form_card_header"><i class="fa fa-user-o"/><h2>Assignment Information</h2></div>
+                        <div class="kio_form_grid kio_form_grid_2">
+                            <label class="kio_form_field"><span>Assign To</span><select><option t-esc="addAssetForm.assignTo"/></select></label>
+                            <label class="kio_form_field"><span>Employee ID</span><input t-att-value="addAssetForm.employeeId"/></label>
+                            <label class="kio_form_field"><span>Assign Date</span><div class="kio_input_icon"><input t-att-value="addAssetForm.assignDate"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Expected Return Date</span><div class="kio_input_icon"><input placeholder="dd/mm/yyyy"/><i class="fa fa-calendar"/></div></label>
+                        </div>
+                    </article>
+                    <article class="kio_form_card">
+                        <div class="kio_form_card_header"><i class="fa fa-usd"/><h2>Financial Information</h2></div>
+                        <div class="kio_form_grid kio_form_grid_2">
+                            <label class="kio_form_field"><span>Depreciation Method <b>*</b></span><select><option t-esc="addAssetForm.depreciationMethod"/></select></label>
+                            <label class="kio_form_field"><span>Useful Life (Years) <b>*</b></span><input t-att-value="addAssetForm.usefulLife"/></label>
+                            <label class="kio_form_field"><span>Residual Value (৳)</span><input t-att-value="addAssetForm.residualValue"/></label>
+                            <label class="kio_form_field"><span>Depreciation Start Date <b>*</b></span><div class="kio_input_icon"><input t-att-value="addAssetForm.depreciationStartDate"/><i class="fa fa-calendar"/></div></label>
+                        </div>
+                    </article>
+                </section>
+
+                <section class="kio_form_card kio_additional_card">
+                    <div class="kio_form_card_header"><i class="fa fa-clipboard"/><h2>Additional Information</h2></div>
+                    <div class="kio_form_grid kio_additional_grid">
+                        <label class="kio_form_field"><span>Supplier / Vendor</span><select><option t-esc="addAssetForm.supplier"/></select></label>
+                        <label class="kio_form_field"><span>Invoice Number</span><input t-att-value="addAssetForm.invoiceNumber"/></label>
+                        <label class="kio_form_field"><span>PO Number</span><input t-att-value="addAssetForm.poNumber"/></label>
+                        <label class="kio_form_field"><span>Tags / Notes</span><textarea><t t-esc="addAssetForm.tagsNotes"/></textarea></label>
+                        <label class="kio_active_check"><input type="checkbox" checked="checked"/> Active</label>
+                    </div>
+                </section>
+            </main>
+        </section>
+    </t>
+</templates>

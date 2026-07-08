@@ -48,7 +48,7 @@
 
                 <section class="kio_action_row" aria-label="Quick actions">
                     <t t-foreach="actions" t-as="action" t-key="action.label">
-                        <button t-attf-class="kio_action_btn kio_action_#{action.tone}" type="button">
+                        <button t-attf-class="kio_action_btn kio_action_#{action.tone}" type="button" t-on-click="() => this.handleQuickAction(action)">
                             <i t-attf-class="fa #{action.icon}"/>
                             <span t-esc="action.label"/>
                         </button>
@@ -198,6 +198,7 @@
             </footer>
             </t>
             <t t-if="state.page === 'asset_list'" t-call="kio_asset_management.AssetListPage"/>
+            <t t-if="state.page === 'add_asset'" t-call="kio_asset_management.AddAssetPage"/>
         </div>
     </t>
 </templates>

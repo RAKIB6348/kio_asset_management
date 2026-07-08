@@ -1,7 +1,8 @@
 /** @odoo-module **/
 
-import { Component, useState } from "@odoo/owl";
+import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
 import { assetListKpis, assetRows } from "./asset_list_data";
 import { addAssetFormState } from "./add_asset_data";
 import { buildAssetDetails } from "./asset_details_data";
@@ -10,7 +11,8 @@ export class AssetDashboard extends Component {
     static template = "kio_asset_management.AssetDashboard";
 
     setup() {
-        this.state = useState({ page: "dashboard", previousPage: "dashboard" });
+        this.orm = useService("orm");
+        this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
         this.addAssetForm = addAssetFormState;
@@ -75,6 +77,35 @@ export class AssetDashboard extends Component {
             { label: "Monthly Depreciation", value: "৳ 320,000", icon: "fa-clock-o", tone: "purple" },
             { label: "Yearly Depreciation", value: "৳ 3,840,000", icon: "fa-calendar", tone: "orange" },
         ];
+        this.assetDetailsByCode = {};
+        onWillStart(async () => this.loadDynamicAssetData());
+    }
+
+    async loadDynamicAssetData() {
+        try {
+            const data = await this.orm.call("kio.asset.dashboard.service", "get_asset_dashboard_data", []);
+            if (data && data.assetRows && data.assetRows.length) {
+                this.kpis = data.kpis || this.kpis;
+                this.assetListKpis = data.assetListKpis || this.assetListKpis;
+                this.assetRows = data.assetRows || this.assetRows;
+                this.assetDetailsByCode = data.assetDetailsByCode || {};
+                this.statuses = data.statuses || this.statuses;
+                this.locations = data.locations || this.locations;
+                this.depreciationSummary = data.depreciationSummary || this.depreciationSummary;
+                this.assignedAssets = data.assignedAssets || this.assignedAssets;
+                this.selectedAsset = this.assetDetailsByCode[this.assetRows[0].code] || buildAssetDetails(this.assetRows[0]);
+            }
+        } catch (error) {
+            console.warn("Asset dashboard dynamic data fallback", error);
+        } finally {
+            this.state.loaded = true;
+        }
+    }
+
+    get assetListShowingText() {
+        const total = this.assetListKpis && this.assetListKpis.length ? this.assetListKpis[0].value : this.assetRows.length;
+        const shown = Math.min(this.assetRows.length, 10);
+        return `Showing 1 to ${shown} of ${total} assets`;
     }
 
     handleKpiClick(kpi) {
@@ -95,7 +126,7 @@ export class AssetDashboard extends Component {
     }
 
     openAssetDetails(row) {
-        this.selectedAsset = buildAssetDetails(row);
+        this.selectedAsset = this.assetDetailsByCode[row.code] || buildAssetDetails(row);
         this.state.previousPage = "asset_list";
         this.state.page = "asset_details";
     }

@@ -14,7 +14,7 @@ Modern OWL dashboard for tracking assets, assignments, maintenance, and deprecia
     'category': 'Operations/Inventory',
     'version': '0.1',
 
-    'depends': ['base', 'web'],
+    'depends': ['base', 'web', 'product', 'account'],
 
     'data': [
         # 'security/ir.model.access.csv',

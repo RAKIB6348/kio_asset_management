@@ -72,7 +72,7 @@
 
                 <section class="kio_asset_table_card">
                     <div class="kio_table_toolbar">
-                        <p>Showing 1 to 10 of 1,248 assets</p>
+                        <p t-esc="assetListShowingText"/>
                         <div>
                             <button class="kio_soft_btn" type="button"><i class="fa fa-download"/> Import</button>
                             <button class="kio_soft_btn" type="button"><i class="fa fa-upload"/> Export</button>

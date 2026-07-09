@@ -685,3 +685,332 @@
         gap: 8px;
     }
 }
+
+
+/* Responsive hardening: dashboard layout only. */
+.kio_asset_dashboard,
+.kio_asset_dashboard * {
+    min-width: 0;
+}
+
+.kio_asset_dashboard button,
+.kio_asset_dashboard input,
+.kio_asset_dashboard select,
+.kio_asset_dashboard textarea {
+    max-width: 100%;
+}
+
+.kio_asset_header_tools {
+    min-width: 0;
+}
+
+.kio_asset_search {
+    max-width: 100%;
+}
+
+.kio_kpi_card,
+.kio_action_btn,
+.kio_panel,
+.kio_panel_header,
+.kio_legend_item,
+.kio_count_item,
+.kio_summary_item {
+    min-width: 0;
+}
+
+.kio_kpi_body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.kio_kpi_body h2,
+.kio_kpi_body strong,
+.kio_panel_header h2,
+.kio_legend_label,
+.kio_count_item span:nth-child(2),
+.kio_summary_item > span:nth-child(2) {
+    overflow-wrap: anywhere;
+}
+
+.kio_kpi_body p {
+    margin-top: auto;
+}
+
+.kio_action_btn {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+}
+
+@media (min-width: 1600px) {
+    .kio_kpi_grid {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1400px) {
+    .kio_asset_header,
+    .kio_asset_main,
+    .kio_asset_footer {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .kio_kpi_grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1200px) {
+    .kio_kpi_grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kio_dashboard_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kio_action_row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-width: none;
+        margin-left: 0;
+    }
+
+    .kio_status_wrap {
+        grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr);
+    }
+
+    .kio_donut_chart {
+        width: min(190px, 100%);
+        height: auto;
+        aspect-ratio: 1;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 992px) {
+    .kio_asset_search {
+        min-width: 0;
+    }
+
+    .kio_asset_header_tools {
+        justify-content: flex-start;
+    }
+
+    .kio_status_wrap {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    .kio_status_legend {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .kio_asset_header {
+        position: static;
+    }
+
+    .kio_dashboard_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_panel_header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .kio_bar_chart {
+        grid-template-columns: 34px minmax(0, 1fr);
+        min-height: 230px;
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .kio_bars {
+        grid-template-columns: repeat(5, minmax(34px, 1fr));
+        gap: 10px;
+    }
+
+    .kio_bar {
+        width: 100%;
+        max-width: 42px;
+    }
+
+    .kio_table {
+        min-width: 0;
+    }
+
+    .kio_table thead {
+        display: none;
+    }
+
+    .kio_table,
+    .kio_table tbody,
+    .kio_table tr,
+    .kio_table td {
+        display: block;
+        width: 100%;
+    }
+
+    .kio_table tr {
+        padding: 12px 0;
+        border-top: 1px solid #e6edf6;
+    }
+
+    .kio_table td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 8px 18px;
+        border-top: 0;
+        white-space: normal;
+        text-align: right;
+    }
+
+    .kio_table td::before {
+        flex: 0 0 42%;
+        color: #60708b;
+        content: "";
+        font-size: 12px;
+        font-weight: 800;
+        text-align: left;
+    }
+
+    .kio_table td:nth-child(1)::before { content: "Asset"; }
+    .kio_table td:nth-child(2)::before { content: "Assigned To"; }
+    .kio_table td:nth-child(3)::before { content: "Department"; }
+    .kio_table td:nth-child(4)::before { content: "Date"; }
+    .kio_table td:nth-child(5)::before { content: "Status"; }
+
+    .kio_table td strong,
+    .kio_table td span {
+        text-align: right;
+    }
+}
+
+@media (max-width: 576px) {
+    .kio_asset_header,
+    .kio_asset_main,
+    .kio_asset_footer {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .kio_action_row {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_kpi_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .kio_kpi_card {
+        min-height: 126px;
+        padding: 16px 14px;
+    }
+
+    .kio_kpi_icon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .kio_kpi_body strong {
+        font-size: 23px;
+    }
+
+    .kio_asset_header_tools {
+        grid-template-columns: 1fr repeat(3, 38px);
+        gap: 10px;
+    }
+
+    .kio_asset_icon_btn,
+    .kio_asset_avatar {
+        width: 38px;
+        height: 38px;
+    }
+
+    .kio_asset_footer {
+        align-items: center;
+        text-align: center;
+    }
+
+    .kio_asset_footer div {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .kio_status_wrap,
+    .kio_bar_chart,
+    .kio_count_list,
+    .kio_summary_list {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .kio_action_btn {
+        min-height: 50px;
+        font-size: 15px;
+    }
+
+    .kio_summary_item {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        padding: 10px 0;
+    }
+
+    .kio_summary_item strong {
+        width: 100%;
+        padding-left: 46px;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 375px) {
+    .kio_kpi_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_asset_header_tools {
+        grid-template-columns: 1fr repeat(3, 36px);
+        gap: 8px;
+    }
+
+    .kio_asset_icon_btn,
+    .kio_asset_avatar {
+        width: 36px;
+        height: 36px;
+    }
+}
+
+@media (max-width: 320px) {
+    .kio_asset_header,
+    .kio_asset_main,
+    .kio_asset_footer {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .kio_asset_search {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+
+/* Mobile labels for the second dashboard data table. */
+@media (max-width: 768px) {
+    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(1)::before { content: "Request"; }
+    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(2)::before { content: "Asset"; }
+    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(3)::before { content: "Requested By"; }
+    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(4)::before { content: "Status"; }
+}

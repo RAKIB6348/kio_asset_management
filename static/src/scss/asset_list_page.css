@@ -469,3 +469,215 @@
         flex-wrap: wrap;
     }
 }
+
+
+/* Responsive hardening: asset list layout only. */
+.kio_asset_list_page,
+.kio_asset_list_page * {
+    min-width: 0;
+}
+
+.kio_list_title_block h1,
+.kio_breadcrumb,
+.kio_table_toolbar p {
+    overflow-wrap: anywhere;
+}
+
+.kio_list_tools,
+.kio_table_toolbar div,
+.kio_asset_pagination,
+.kio_page_numbers {
+    min-width: 0;
+}
+
+.kio_soft_btn,
+.kio_primary_btn,
+.kio_more_filters {
+    min-width: 0;
+    text-align: center;
+}
+
+@media (min-width: 1600px) {
+    .kio_list_kpi_grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1400px) {
+    .kio_list_header,
+    .kio_list_main {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .kio_list_kpi_grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kio_filter_panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1200px) {
+    .kio_list_header {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .kio_list_tools {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .kio_list_search {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .kio_list_kpi_grid,
+    .kio_filter_panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .kio_list_kpi_grid,
+    .kio_filter_panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kio_table_toolbar,
+    .kio_asset_pagination {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .kio_table_toolbar div {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .kio_list_header {
+        position: static;
+    }
+
+    .kio_asset_list_table {
+        min-width: 0;
+    }
+
+    .kio_asset_list_table thead {
+        display: none;
+    }
+
+    .kio_asset_list_table,
+    .kio_asset_list_table tbody,
+    .kio_asset_list_table tr,
+    .kio_asset_list_table td {
+        display: block;
+        width: 100%;
+    }
+
+    .kio_asset_list_table tr {
+        padding: 12px 0;
+        border-top: 1px solid #e6edf6;
+    }
+
+    .kio_asset_list_table td {
+        display: grid;
+        grid-template-columns: minmax(105px, 38%) minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        border-top: 0;
+        white-space: normal;
+    }
+
+    .kio_asset_list_table td::before {
+        color: #60708b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .kio_asset_list_table td:nth-child(1)::before { content: "Select"; }
+    .kio_asset_list_table td:nth-child(2)::before { content: "Asset Code"; }
+    .kio_asset_list_table td:nth-child(3)::before { content: "Image"; }
+    .kio_asset_list_table td:nth-child(4)::before { content: "Asset Name"; }
+    .kio_asset_list_table td:nth-child(5)::before { content: "Qty"; }
+    .kio_asset_list_table td:nth-child(6)::before { content: "Category"; }
+    .kio_asset_list_table td:nth-child(7)::before { content: "Brand / Model"; }
+    .kio_asset_list_table td:nth-child(8)::before { content: "Serial Number"; }
+    .kio_asset_list_table td:nth-child(9)::before { content: "Location"; }
+    .kio_asset_list_table td:nth-child(10)::before { content: "Assigned To"; }
+    .kio_asset_list_table td:nth-child(11)::before { content: "Purchase Date"; }
+    .kio_asset_list_table td:nth-child(12)::before { content: "Purchase Price"; }
+    .kio_asset_list_table td:nth-child(13)::before { content: "Status"; }
+    .kio_asset_list_table td:nth-child(14)::before { content: "Actions"; }
+
+    .kio_row_actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 576px) {
+    .kio_list_header,
+    .kio_list_main {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .kio_list_kpi_grid,
+    .kio_filter_panel {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_table_toolbar div,
+    .kio_soft_btn,
+    .kio_primary_btn,
+    .kio_more_filters {
+        width: 100%;
+    }
+
+    .kio_table_toolbar div {
+        align-items: stretch;
+    }
+
+    .kio_page_numbers {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .kio_list_header {
+        gap: 12px;
+    }
+
+    .kio_breadcrumb {
+        flex-wrap: wrap;
+    }
+
+    .kio_asset_pagination {
+        padding: 14px;
+    }
+
+    .kio_page_numbers button {
+        min-width: 38px;
+        height: 38px;
+    }
+}
+
+@media (max-width: 375px) {
+    .kio_asset_list_table td {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+}
+
+@media (max-width: 320px) {
+    .kio_list_header,
+    .kio_list_main {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}

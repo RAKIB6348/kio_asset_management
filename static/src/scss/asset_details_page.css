@@ -439,3 +439,247 @@
         flex-direction: column;
     }
 }
+
+
+/* Responsive hardening: asset details layout only. */
+.kio_asset_details_page,
+.kio_asset_details_page * {
+    min-width: 0;
+}
+
+.kio_details_name_row h2,
+.kio_details_facts strong,
+.kio_details_info_grid strong,
+.kio_assignment_grid strong,
+.kio_finance_summary_grid strong,
+.kio_details_card h2 {
+    overflow-wrap: anywhere;
+}
+
+.kio_details_actions,
+.kio_details_tabs,
+.kio_quick_action_grid,
+.kio_assignment_grid {
+    min-width: 0;
+}
+
+@media (min-width: 1600px) {
+    .kio_finance_summary_grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1400px) {
+    .kio_details_header,
+    .kio_details_main {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .kio_details_facts,
+    .kio_finance_summary_grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kio_details_content_grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .kio_details_header {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .kio_details_header .kio_list_tools {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .kio_details_summary_card {
+        grid-template-columns: 170px minmax(0, 1fr);
+    }
+
+    .kio_qr_box {
+        grid-column: 1 / -1;
+        min-height: auto;
+    }
+}
+
+@media (max-width: 992px) {
+    .kio_details_summary_card {
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+    }
+
+    .kio_details_asset_visual {
+        width: 100%;
+        max-width: 320px;
+        justify-self: center;
+    }
+
+    .kio_details_facts,
+    .kio_finance_summary_grid,
+    .kio_details_info_grid,
+    .kio_assignment_grid,
+    .kio_quick_action_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .kio_details_header {
+        position: static;
+    }
+
+    .kio_details_actions {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .kio_details_actions .kio_soft_btn,
+    .kio_details_more {
+        flex: 1 1 160px;
+    }
+
+    .kio_details_name_row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .kio_details_facts,
+    .kio_finance_summary_grid,
+    .kio_details_info_grid,
+    .kio_assignment_grid,
+    .kio_quick_action_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_details_tabs {
+        padding: 0 12px;
+        scroll-snap-type: x proximity;
+    }
+
+    .kio_details_tabs button {
+        scroll-snap-align: start;
+    }
+
+    .kio_details_table {
+        min-width: 0;
+    }
+
+    .kio_details_table thead {
+        display: none;
+    }
+
+    .kio_details_table,
+    .kio_details_table tbody,
+    .kio_details_table tr,
+    .kio_details_table td {
+        display: block;
+        width: 100%;
+    }
+
+    .kio_details_table tr {
+        padding: 12px 0;
+        border-top: 1px solid #e6edf6;
+    }
+
+    .kio_details_table td {
+        display: grid;
+        grid-template-columns: minmax(120px, 40%) minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-top: 0;
+        white-space: normal;
+    }
+
+    .kio_details_table td::before {
+        color: #60708b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .kio_details_table td:nth-child(1)::before { content: "Request No"; }
+    .kio_details_table td:nth-child(2)::before { content: "Request Date"; }
+    .kio_details_table td:nth-child(3)::before { content: "Issue"; }
+    .kio_details_table td:nth-child(4)::before { content: "Status"; }
+    .kio_details_table td:nth-child(5)::before { content: "Priority"; }
+    .kio_details_table td:nth-child(6)::before { content: "Next Maintenance"; }
+    .kio_details_table td:nth-child(7)::before { content: "Actions"; }
+}
+
+@media (max-width: 576px) {
+    .kio_details_header,
+    .kio_details_main {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .kio_details_actions {
+        flex-direction: column;
+    }
+
+    .kio_details_actions .kio_soft_btn,
+    .kio_details_more {
+        width: 100%;
+        flex-basis: auto;
+    }
+
+    .kio_details_summary_card,
+    .kio_details_card {
+        padding: 16px;
+    }
+
+    .kio_details_name_row h2 {
+        font-size: 23px;
+    }
+
+    .kio_finance_summary_grid article {
+        grid-template-columns: 38px minmax(0, 1fr);
+        padding: 14px;
+    }
+
+    .kio_details_tabs button {
+        min-height: 48px;
+        padding: 0 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .kio_details_header {
+        gap: 12px;
+    }
+
+    .kio_details_asset_visual {
+        height: 104px;
+        font-size: 46px;
+    }
+
+    .kio_details_table td {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+
+    .kio_invoice_link {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 320px) {
+    .kio_details_header,
+    .kio_details_main {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .kio_details_summary_card,
+    .kio_details_card {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}

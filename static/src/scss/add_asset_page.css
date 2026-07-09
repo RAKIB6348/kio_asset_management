@@ -321,3 +321,167 @@
         flex: 1;
     }
 }
+
+
+/* Responsive hardening: add asset layout only. */
+.kio_add_asset_page,
+.kio_add_asset_page * {
+    min-width: 0;
+}
+
+.kio_form_card_header h2,
+.kio_form_field span,
+.kio_upload_area p,
+.kio_upload_area small {
+    overflow-wrap: anywhere;
+}
+
+.kio_cancel_btn,
+.kio_save_btn {
+    min-width: 0;
+    text-align: center;
+}
+
+@media (min-width: 1600px) {
+    .kio_add_top_grid {
+        grid-template-columns: minmax(0, 1fr) 340px;
+    }
+}
+
+@media (max-width: 1400px) {
+    .kio_add_header,
+    .kio_add_main {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .kio_add_top_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_form_three_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kio_form_grid_4,
+    .kio_additional_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 1200px) {
+    .kio_add_header {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .kio_add_header .kio_list_tools {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .kio_form_grid_4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .kio_form_three_grid,
+    .kio_form_grid_4,
+    .kio_form_grid_2,
+    .kio_additional_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_upload_area {
+        min-height: 260px;
+    }
+}
+
+@media (max-width: 768px) {
+    .kio_add_header {
+        position: static;
+    }
+
+    .kio_add_actions {
+        align-items: stretch;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .kio_cancel_btn,
+    .kio_save_btn {
+        flex: 1 1 160px;
+    }
+}
+
+@media (max-width: 576px) {
+    .kio_add_header,
+    .kio_add_main {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .kio_add_actions,
+    .kio_cancel_btn,
+    .kio_save_btn {
+        width: 100%;
+    }
+
+    .kio_form_grid {
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .kio_form_card_header {
+        margin: 0 16px;
+    }
+
+    .kio_upload_area {
+        margin: 22px 16px 18px;
+        padding: 20px;
+    }
+
+    .kio_upload_preview {
+        width: min(184px, 100%);
+    }
+}
+
+@media (max-width: 480px) {
+    .kio_add_header {
+        gap: 12px;
+    }
+
+    .kio_add_actions {
+        flex-direction: column;
+    }
+
+    .kio_cancel_btn,
+    .kio_save_btn {
+        flex-basis: auto;
+        width: 100%;
+    }
+
+    .kio_upload_preview {
+        height: 104px;
+        font-size: 46px;
+    }
+
+    .kio_upload_preview span {
+        right: 24px;
+        width: 48px;
+        height: 48px;
+    }
+}
+
+@media (max-width: 320px) {
+    .kio_add_header,
+    .kio_add_main {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .kio_form_grid {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}

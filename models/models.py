@@ -13,7 +13,7 @@ class KioAssetDashboardService(models.AbstractModel):
         purchase_map = self._get_purchase_financials(products)
         base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products[:80]]
         rows = self._expand_rows_by_quantity(base_rows)
-        details = {row['code']: self._row_to_details(row) for row in base_rows}
+        details = {row['code']: self._row_to_details(row) for row in rows}
         total_assets = len(rows)
         active_assets = len([row for row in rows if row['status'] != 'Retired'])
         assigned_assets = len([row for row in rows if row['assignedTo'] != '-'])
@@ -113,20 +113,27 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _expand_rows_by_quantity(self, rows):
         expanded = []
+        sequence_number = 1
         for row in rows:
             quantity = row.get('quantity') or 1
             if quantity < 1:
                 quantity = 1
             for index in range(1, quantity + 1):
+                asset_code = self._format_asset_sequence(sequence_number)
                 expanded_row = dict(row)
                 expanded_row.update({
-                    'rowKey': '%s-%s' % (row['code'], index),
+                    'code': asset_code,
+                    'rowKey': '%s-%s' % (asset_code, index),
                     'qtyIndex': index,
                     'qtyTotal': quantity,
                     'qtyLabel': '%s/%s' % (index, quantity),
                 })
                 expanded.append(expanded_row)
+                sequence_number += 1
         return expanded
+
+    def _format_asset_sequence(self, sequence_number):
+        return 'AST-%05d' % sequence_number
 
     def _row_to_details(self, row):
         return {

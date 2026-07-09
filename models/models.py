@@ -3,6 +3,34 @@
 from odoo import api, fields, models
 
 
+class KioAssetUnit(models.Model):
+    _name = 'kio.asset.unit'
+    _description = 'KIO Asset Unit'
+    _order = 'asset_code desc, id desc'
+    _rec_name = 'asset_code'
+
+    product_id = fields.Many2one('product.product', required=True, index=True, ondelete='cascade')
+    unit_index = fields.Integer(required=True, index=True)
+    asset_code = fields.Char(required=True, copy=False, index=True)
+
+    _sql_constraints = [
+        ('product_unit_unique', 'unique(product_id, unit_index)', 'Each product unit must be unique.'),
+        ('asset_code_unique', 'unique(asset_code)', 'Asset code must be unique.'),
+    ]
+
+    @api.model
+    def action_resequence_asset_codes(self):
+        units = self.sudo().search([], order='create_date asc, id asc')
+        for unit in units:
+            unit.asset_code = 'TMP-%s' % unit.id
+        for index, unit in enumerate(units, start=1):
+            unit.asset_code = 'AST-%05d' % index
+        sequence = self.env['ir.sequence'].sudo().search([('code', '=', 'asset.management.code')], limit=1)
+        if sequence:
+            sequence.write({'number_next_actual': len(units) + 1})
+        return True
+
+
 class KioAssetDashboardService(models.AbstractModel):
     _name = 'kio.asset.dashboard.service'
     _description = 'KIO Asset Dashboard Service'
@@ -12,7 +40,8 @@ class KioAssetDashboardService(models.AbstractModel):
         products = self._get_asset_products()
         purchase_map = self._get_purchase_financials(products)
         base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products[:80]]
-        rows = self._expand_rows_by_quantity(base_rows)
+        self._sync_asset_units(base_rows)
+        rows = sorted(self._expand_rows_by_quantity(base_rows), key=lambda row: row['code'], reverse=True)
         details = {row['code']: self._row_to_details(row) for row in rows}
         total_assets = len(rows)
         active_assets = len([row for row in rows if row['status'] != 'Retired'])
@@ -41,7 +70,7 @@ class KioAssetDashboardService(models.AbstractModel):
         if not category:
             return self.env['product.product']
         category_ids = self.env['product.category'].search([('id', 'child_of', category.id)]).ids
-        return self.env['product.product'].search([('categ_id', 'in', category_ids), ('active', '=', True)], order='default_code, name')
+        return self.env['product.product'].search([('categ_id', 'in', category_ids), ('active', '=', True)], order='create_date desc, id desc')
 
     def _get_purchase_financials(self, products):
         if not products:
@@ -111,15 +140,44 @@ class KioAssetDashboardService(models.AbstractModel):
             'poNumber': financial.get('po_number') or '',
         }
 
+    def _sync_asset_units(self, rows):
+        unit_model = self.env['kio.asset.unit'].sudo()
+        sequence = self.env['ir.sequence'].sudo()
+        for row in reversed(rows):
+            product_id = row.get('id')
+            quantity = row.get('quantity') or 1
+            if not product_id:
+                continue
+            if quantity < 1:
+                quantity = 1
+            existing_units = unit_model.search([('product_id', '=', product_id)])
+            existing_indexes = set(existing_units.mapped('unit_index'))
+            obsolete_units = existing_units.filtered(lambda unit: unit.unit_index > quantity)
+            if obsolete_units:
+                obsolete_units.unlink()
+            for index in range(1, quantity + 1):
+                if index in existing_indexes:
+                    continue
+                unit_model.create({
+                    'product_id': product_id,
+                    'unit_index': index,
+                    'asset_code': sequence.next_by_code('asset.management.code'),
+                })
+
     def _expand_rows_by_quantity(self, rows):
         expanded = []
-        sequence = self.env['ir.sequence']
+        unit_model = self.env['kio.asset.unit'].sudo()
         for row in rows:
             quantity = row.get('quantity') or 1
             if quantity < 1:
                 quantity = 1
+            units = unit_model.search([('product_id', '=', row['id']), ('unit_index', '<=', quantity)], order='unit_index asc, id asc')
+            units_by_index = {unit.unit_index: unit for unit in units}
             for index in range(1, quantity + 1):
-                asset_code = sequence.next_by_code('asset.management.code')
+                unit = units_by_index.get(index)
+                if not unit:
+                    continue
+                asset_code = unit.asset_code
                 expanded_row = dict(row)
                 expanded_row.update({
                     'code': asset_code,
@@ -130,6 +188,14 @@ class KioAssetDashboardService(models.AbstractModel):
                 })
                 expanded.append(expanded_row)
         return expanded
+
+    @api.model
+    def reset_asset_unit_codes(self):
+        products = self._get_asset_products()
+        purchase_map = self._get_purchase_financials(products)
+        base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products]
+        self._sync_asset_units(base_rows)
+        return self.env['kio.asset.unit'].sudo().action_resequence_asset_codes()
 
     def _row_to_details(self, row):
         return {

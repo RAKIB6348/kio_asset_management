@@ -103,7 +103,7 @@
                                 <t t-foreach="displayAssetRows" t-as="row" t-key="row.rowKey || row.code">
                                     <tr>
                                         <td><input type="checkbox"/></td>
-                                        <td><a href="#" t-esc="row.code"/></td>
+                                        <td><a href="#" t-on-click.prevent="() => this.openAssetDetails(row)" t-esc="row.code"/></td>
                                         <td><span class="kio_asset_thumb"><i t-attf-class="fa #{row.icon}"/></span></td>
                                         <td><strong t-esc="row.name"/></td>
                                         <td><span class="kio_qty_badge" t-esc="row.qtyLabel || '1/1'"/></td>

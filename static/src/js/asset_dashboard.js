@@ -107,17 +107,13 @@ export class AssetDashboard extends Component {
         if (!term) {
             return this.assetRows;
         }
-        return this.assetRows.filter((row) => [
-            row.code,
-            row.name,
-            row.category,
-            row.brand,
-            row.serial,
-            row.location,
-            row.assignedTo,
-            row.status,
-            row.qtyLabel,
-        ].some((value) => String(value || "").toLowerCase().includes(term)));
+        const compactTerm = term.replace(/[^a-z0-9]/g, "");
+        return this.assetRows.filter((row) => {
+            const assetCode = String(row.code || "").toLowerCase();
+            const compactAssetCode = assetCode.replace(/[^a-z0-9]/g, "");
+            const assetName = String(row.name || row.assetName || row.display_name || row.displayName || "").toLowerCase();
+            return assetCode.includes(term) || compactAssetCode.includes(compactTerm) || assetName.includes(term);
+        });
     }
 
     get displayAssetRows() {

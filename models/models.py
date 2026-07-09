@@ -113,13 +113,13 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _expand_rows_by_quantity(self, rows):
         expanded = []
-        sequence_number = 1
+        sequence = self.env['ir.sequence']
         for row in rows:
             quantity = row.get('quantity') or 1
             if quantity < 1:
                 quantity = 1
             for index in range(1, quantity + 1):
-                asset_code = self._format_asset_sequence(sequence_number)
+                asset_code = sequence.next_by_code('asset.management.code')
                 expanded_row = dict(row)
                 expanded_row.update({
                     'code': asset_code,
@@ -129,11 +129,7 @@ class KioAssetDashboardService(models.AbstractModel):
                     'qtyLabel': '%s/%s' % (index, quantity),
                 })
                 expanded.append(expanded_row)
-                sequence_number += 1
         return expanded
-
-    def _format_asset_sequence(self, sequence_number):
-        return 'AST-%05d' % sequence_number
 
     def _row_to_details(self, row):
         return {

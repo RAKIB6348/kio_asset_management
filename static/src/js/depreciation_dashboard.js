@@ -81,6 +81,17 @@ export class DepreciationDashboard extends Component {
         this.state.data.automation.journalId = Number(event.target.value) || false;
     }
 
+    backToAssetDashboard() {
+        return this.actionService.doAction({
+            type: "ir.actions.client",
+            tag: "kio_asset_management.asset_dashboard",
+            target: "current",
+            context: {
+                page: "dashboard",
+            },
+        });
+    }
+
     runDepreciation() {
         console.info("Run depreciation", this.state.selectedAssetId);
     }

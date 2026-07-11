@@ -38,6 +38,34 @@
     margin-bottom: 24px;
 }
 
+.kio_depr_title_wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    min-width: 0;
+}
+
+.kio_depr_back {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #d8e2f1;
+    border-radius: 6px;
+    background: #fff;
+    color: #071b4d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.kio_depr_back:hover {
+    transform: translateY(-1px);
+    border-color: #b9ccff;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, .08);
+}
+
 .kio_depr_heading h1 {
     margin: 0 0 8px;
     font-size: 28px;
@@ -485,6 +513,10 @@
 
     .kio_depr_actions {
         justify-content: flex-start;
+    }
+
+    .kio_depr_title_wrap {
+        width: 100%;
     }
 
     .kio_depr_filter_card,

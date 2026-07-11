@@ -3,7 +3,9 @@
     <t t-name="kio_asset_management.DepreciationDashboard" owl="1">
         <div class="kio_depr_page">
             <header class="kio_depr_header">
-                <div class="kio_depr_heading">
+                <div class="kio_depr_title_wrap">
+                    <button class="kio_depr_back" type="button" aria-label="Back" title="Back" t-on-click="backToAssetDashboard"><i class="fa fa-arrow-left"/></button>
+                    <div class="kio_depr_heading">
                     <h1>Depreciation Management</h1>
                     <nav class="kio_depr_breadcrumb" aria-label="Breadcrumb">
                         <button type="button">Dashboard</button>
@@ -12,6 +14,7 @@
                         <i class="fa fa-angle-right"/>
                         <strong>Depreciation Board</strong>
                     </nav>
+                    </div>
                 </div>
                 <div class="kio_depr_actions">
                     <button class="kio_depr_btn kio_depr_btn_green" type="button" t-on-click="runDepreciation">Run Depreciation</button>

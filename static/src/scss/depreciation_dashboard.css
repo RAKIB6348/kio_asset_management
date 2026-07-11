@@ -5,12 +5,29 @@
 }
 
 .kio_depr_page {
-    min-height: 100%;
+    height: calc(100vh - 70px);
     width: 100%;
     padding: 24px 28px 40px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #c5cbd8 transparent;
     background: #f6f8fc;
     color: #071b4d;
     font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.kio_depr_page::-webkit-scrollbar {
+    width: 8px;
+}
+
+.kio_depr_page::-webkit-scrollbar-thumb {
+    background: #c5cbd8;
+    border-radius: 10px;
+}
+
+.kio_depr_page::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .kio_depr_header {
@@ -457,6 +474,7 @@
 
 @media (max-width: 900px) {
     .kio_depr_page {
+        height: calc(100vh - 64px);
         padding: 18px 14px 32px;
     }
 

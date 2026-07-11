@@ -31,4 +31,7 @@ export const addAssetFormState = {
     poNumber: "PO-2024-0087",
     tagsNotes: "Office use laptop for general operations and documentation.",
     active: true,
+    imagePreviewUrl: "",
+    imageBinary: false,
+    imageChanged: false,
 };

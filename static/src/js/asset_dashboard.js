@@ -12,7 +12,7 @@ export class AssetDashboard extends Component {
 
     setup() {
         this.orm = useService("orm");
-        this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10 });
+        this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10, assetFormMode: "create", editingAssetId: false, imageVersion: 0 });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
         this.addAssetForm = addAssetFormState;
@@ -171,6 +171,46 @@ export class AssetDashboard extends Component {
 
     openAddAsset() {
         this.state.previousPage = this.state.page;
+        this.state.assetFormMode = "create";
+        this.state.editingAssetId = false;
+        Object.assign(this.addAssetForm, {
+            imagePreviewUrl: "",
+            imageBinary: false,
+            imageChanged: false,
+        });
+        this.state.page = "add_asset";
+    }
+
+    openEditAsset(assetId) {
+        const row = this.assetRows.find((asset) => asset.id === assetId);
+        if (!row) {
+            console.warn("Cannot edit asset image without a matching asset row", assetId);
+            return;
+        }
+        this.state.previousPage = "asset_list";
+        this.state.assetFormMode = "edit";
+        this.state.editingAssetId = assetId;
+        Object.assign(this.addAssetForm, {
+            assetCode: row.code,
+            assetName: row.name,
+            category: row.category,
+            brandModel: row.brand,
+            serialNumber: row.serial,
+            barcode: row.serial,
+            status: row.status,
+            assetType: "Tangible",
+            purchaseDate: row.purchaseDate,
+            purchasePrice: row.price,
+            supplier: row.vendor || "",
+            invoiceNumber: row.invoiceNumber || "",
+            poNumber: row.poNumber || "",
+            location: row.location,
+            department: row.locationMeta || "",
+            assignTo: row.assignedTo,
+            imagePreviewUrl: row.imageUrl || "",
+            imageBinary: false,
+            imageChanged: false,
+        });
         this.state.page = "add_asset";
     }
 
@@ -188,10 +228,35 @@ export class AssetDashboard extends Component {
         this.state.page = this.state.previousPage || "dashboard";
     }
 
-    saveAsset() {
+    async saveAsset() {
+        if (this.state.assetFormMode === "edit" && this.state.editingAssetId) {
+            if (this.addAssetForm.imageChanged) {
+                await this.orm.call("kio.asset.dashboard.service", "update_asset_image", [this.state.editingAssetId, this.addAssetForm.imageBinary || false]);
+                await this.loadDynamicAssetData();
+            }
+            this.closeAddAsset();
+            return;
+        }
+
         // Placeholder hook for future ORM/RPC persistence.
         console.info("Save Asset", this.addAssetForm);
         this.closeAddAsset();
+    }
+
+    onAssetImageChange(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) {
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result || "";
+            this.addAssetForm.imagePreviewUrl = dataUrl;
+            this.addAssetForm.imageBinary = String(dataUrl).split(",")[1] || false;
+            this.addAssetForm.imageChanged = true;
+            this.state.imageVersion += 1;
+        };
+        reader.readAsDataURL(file);
     }
 
     editAsset() {

@@ -12,6 +12,7 @@ class KioAssetUnit(models.Model):
     product_id = fields.Many2one('product.product', required=True, index=True, ondelete='cascade')
     unit_index = fields.Integer(required=True, index=True)
     asset_code = fields.Char(required=True, copy=False, index=True)
+    image_1920 = fields.Image("Asset Image", max_width=1920, max_height=1920)
 
     _sql_constraints = [
         ('product_unit_unique', 'unique(product_id, unit_index)', 'Each product unit must be unique.'),
@@ -114,6 +115,7 @@ class KioAssetDashboardService(models.AbstractModel):
         code = product.default_code or 'AST-%05d' % product.id
         return {
             'id': product.id,
+            'productId': product.id,
             'code': code,
             'icon': self._icon_for_category(product.categ_id.name),
             'name': product.display_name,
@@ -144,7 +146,7 @@ class KioAssetDashboardService(models.AbstractModel):
         unit_model = self.env['kio.asset.unit'].sudo()
         sequence = self.env['ir.sequence'].sudo()
         for row in reversed(rows):
-            product_id = row.get('id')
+            product_id = row.get('productId') or row.get('id')
             quantity = row.get('quantity') or 1
             if not product_id:
                 continue
@@ -171,7 +173,8 @@ class KioAssetDashboardService(models.AbstractModel):
             quantity = row.get('quantity') or 1
             if quantity < 1:
                 quantity = 1
-            units = unit_model.search([('product_id', '=', row['id']), ('unit_index', '<=', quantity)], order='unit_index asc, id asc')
+            product_id = row.get('productId') or row.get('id')
+            units = unit_model.search([('product_id', '=', product_id), ('unit_index', '<=', quantity)], order='unit_index asc, id asc')
             units_by_index = {unit.unit_index: unit for unit in units}
             for index in range(1, quantity + 1):
                 unit = units_by_index.get(index)
@@ -180,6 +183,9 @@ class KioAssetDashboardService(models.AbstractModel):
                 asset_code = unit.asset_code
                 expanded_row = dict(row)
                 expanded_row.update({
+                    'id': unit.id,
+                    'productId': product_id,
+                    'imageUrl': self._asset_row_image_url(unit),
                     'code': asset_code,
                     'rowKey': '%s-%s' % (asset_code, index),
                     'qtyIndex': index,
@@ -188,6 +194,26 @@ class KioAssetDashboardService(models.AbstractModel):
                 })
                 expanded.append(expanded_row)
         return expanded
+
+    def _asset_row_image_url(self, unit):
+        if unit.image_1920:
+            return self._web_image_url('kio.asset.unit', unit.id, 'image_1920', unit.write_date)
+        product = unit.product_id
+        if product and 'image_1920' in product._fields and product.image_1920:
+            return self._web_image_url('product.product', product.id, 'image_1920', product.write_date)
+        return False
+
+    def _web_image_url(self, model, record_id, field_name, write_date):
+        unique = (fields.Datetime.to_string(write_date) if write_date else str(record_id)).replace(' ', '_')
+        return '/web/image/%s/%s/%s?unique=%s' % (model, record_id, field_name, unique)
+
+    @api.model
+    def update_asset_image(self, asset_id, image_1920):
+        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        if not unit.exists():
+            return False
+        unit.write({'image_1920': image_1920 or False})
+        return True
 
     @api.model
     def reset_asset_unit_codes(self):

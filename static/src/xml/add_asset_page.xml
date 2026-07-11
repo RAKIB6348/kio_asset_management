@@ -7,13 +7,13 @@
                     <i class="fa fa-arrow-left"/>
                 </button>
                 <div class="kio_list_title_block">
-                    <h1>Add New Asset</h1>
+                    <h1 t-esc="state.assetFormMode === &quot;edit&quot; ? &quot;Edit Asset&quot; : &quot;Add New Asset&quot;"/>
                     <nav class="kio_breadcrumb" aria-label="Breadcrumb">
                         <button type="button" t-on-click="openDashboard">Dashboard</button>
                         <i class="fa fa-angle-right"/>
                         <span>Assets</span>
                         <i class="fa fa-angle-right"/>
-                        <strong>Add New Asset</strong>
+                        <strong t-esc="state.assetFormMode === &quot;edit&quot; ? &quot;Edit Asset&quot; : &quot;Add New Asset&quot;"/>
                     </nav>
                 </div>
                 <div class="kio_asset_header_tools kio_list_tools">
@@ -55,11 +55,12 @@
 
                     <article class="kio_form_card kio_image_card">
                         <div class="kio_form_card_header"><i class="fa fa-picture-o"/><h2>Asset Image</h2></div>
-                        <div class="kio_upload_area">
-                            <div class="kio_upload_preview"><i class="fa fa-laptop"/><span><i class="fa fa-camera"/></span></div>
+                        <label class="kio_upload_area">
+                            <div class="kio_upload_preview"><img t-if="addAssetForm.imagePreviewUrl" t-att-src="addAssetForm.imagePreviewUrl" alt="Asset image"/><i t-else="" class="fa fa-laptop"/><span><i class="fa fa-camera"/></span></div>
                             <p>Click to upload or drag and drop</p>
                             <small>PNG, JPG up to 5MB</small>
-                        </div>
+                            <input class="kio_upload_file" type="file" accept="image/*" t-on-change="onAssetImageChange"/>
+                        </label>
                     </article>
                 </section>
 

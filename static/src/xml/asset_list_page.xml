@@ -104,7 +104,7 @@
                                     <tr>
                                         <td><input type="checkbox"/></td>
                                         <td><a href="#" t-on-click.prevent="() => this.openAssetDetails(row)" t-esc="row.code"/></td>
-                                        <td><span class="kio_asset_thumb"><i t-attf-class="fa #{row.icon}"/></span></td>
+                                        <td><span class="kio_asset_thumb"><img t-if="row.imageUrl" t-att-src="row.imageUrl" t-att-alt="row.name"/><i t-else="" t-attf-class="fa #{row.icon}"/></span></td>
                                         <td><strong t-esc="row.name"/></td>
                                         <td><span class="kio_qty_badge" t-esc="row.qtyLabel || '1/1'"/></td>
                                         <td t-esc="row.category"/>
@@ -118,7 +118,7 @@
                                         <td>
                                             <div class="kio_row_actions">
                                                 <button type="button" aria-label="View asset" t-on-click="() => this.openAssetDetails(row)"><i class="fa fa-eye"/></button>
-                                                <button type="button" aria-label="Edit asset" t-on-click="editAsset"><i class="fa fa-pencil-square-o"/></button>
+                                                <button type="button" aria-label="Edit asset" title="Edit Asset" t-on-click.stop="() => this.openEditAsset(row.id)"><i class="fa fa-pencil-square-o"/></button>
                                                 <button type="button" aria-label="More options"><i class="fa fa-ellipsis-v"/></button>
                                             </div>
                                         </td>

@@ -310,6 +310,15 @@
     background: linear-gradient(135deg, #eef5ff, #dce9fb);
     border: 1px solid #cfdbeb;
     font-size: 18px;
+    overflow: hidden;
+}
+
+
+.kio_asset_thumb img {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
 }
 
 .kio_status_badge {

@@ -284,6 +284,7 @@ export class AssetDashboard extends Component {
             this.addAssetForm.imageBinary = String(dataUrl).split(",")[1] || false;
             this.addAssetForm.imageChanged = true;
             this.state.imageVersion += 1;
+            event.target.value = "";
         };
         reader.readAsDataURL(file);
     }

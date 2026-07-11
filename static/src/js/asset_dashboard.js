@@ -78,12 +78,16 @@ export class AssetDashboard extends Component {
             { label: "Yearly Depreciation", value: "৳ 3,840,000", icon: "fa-calendar", tone: "orange" },
         ];
         this.assetDetailsByCode = {};
+        this.employeeOptions = [];
         onWillStart(async () => this.loadDynamicAssetData());
     }
 
     async loadDynamicAssetData() {
         try {
             const data = await this.orm.call("kio.asset.dashboard.service", "get_asset_dashboard_data", []);
+            if (data) {
+                this.employeeOptions = data.employeeOptions || this.employeeOptions;
+            }
             if (data && data.assetRows && data.assetRows.length) {
                 this.kpis = data.kpis || this.kpis;
                 this.assetListKpis = data.assetListKpis || this.assetListKpis;
@@ -243,6 +247,10 @@ export class AssetDashboard extends Component {
         // Placeholder hook for future ORM/RPC persistence.
         console.info("Save Asset", this.addAssetForm);
         this.closeAddAsset();
+    }
+
+    onAssignToChange(event) {
+        this.addAssetForm.assignTo = event.target.value;
     }
 
     onAssetImageChange(event) {

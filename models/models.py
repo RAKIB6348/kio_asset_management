@@ -64,7 +64,12 @@ class KioAssetDashboardService(models.AbstractModel):
             'locations': self._locations(rows),
             'depreciationSummary': self._depreciation_summary(total_assets, purchase_value, depreciation_value, current_value),
             'assignedAssets': self._recent_assigned_assets(rows),
+            'employeeOptions': self._employee_options(),
         }
+
+    def _employee_options(self):
+        employees = self.env['hr.employee'].sudo().search([('active', '=', True)], order='name asc')
+        return [{'id': employee.id, 'name': employee.name} for employee in employees]
 
     def _get_asset_products(self):
         category = self.env['product.category'].search([('name', '=', 'Asset Category')], limit=1)

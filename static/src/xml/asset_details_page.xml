@@ -147,6 +147,7 @@
                                 <button type="button" t-on-click="editAsset"><i class="fa fa-pencil"/> Edit Asset</button>
                                 <button type="button" t-on-click="transferAsset"><i class="fa fa-exchange"/> Transfer Asset</button>
                                 <button type="button" t-on-click="createMaintenance"><i class="fa fa-wrench"/> Create Maintenance</button>
+                                <button type="button" t-on-click="() => this.openDepreciationBoard(selectedAsset.id)"><i class="fa fa-line-chart"/> Depreciation</button>
                                 <button type="button" t-on-click="printAssetLabel"><i class="fa fa-print"/> Print Label</button>
                             </div>
                         </article>

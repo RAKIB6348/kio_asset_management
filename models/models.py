@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
+from dateutil.relativedelta import relativedelta
+from datetime import date
+import calendar
 
 
 class KioAssetUnit(models.Model):
@@ -14,6 +17,22 @@ class KioAssetUnit(models.Model):
     asset_code = fields.Char(required=True, copy=False, index=True)
     image_1920 = fields.Image("Asset Image", max_width=1920, max_height=1920)
     assigned_employee_id = fields.Many2one("hr.employee", string="Assigned To", index=True, ondelete="set null")
+    depreciation_method = fields.Selection([
+        ('straight_line', 'Straight Line'),
+        ('declining_balance', 'Declining Balance'),
+    ], string="Depreciation Method", default='straight_line')
+    useful_life_years = fields.Integer(string="Useful Life (Years)", default=3)
+    residual_value = fields.Monetary(string="Residual Value", currency_field='currency_id')
+    depreciation_start_date = fields.Date(string="Depreciation Start Date")
+    auto_create_journal_entries = fields.Boolean(string="Auto Create Journal Entries", default=False)
+    create_journal_frequency = fields.Selection([
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('yearly', 'Yearly'),
+    ], string="Create Journal", default='monthly')
+    depreciation_journal_id = fields.Many2one('account.journal', string="Depreciation Journal", domain=[('type', '=', 'general')])
+    currency_id = fields.Many2one('res.currency', related='company_id.currency_id', store=True, readonly=True)
+    company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
 
     _sql_constraints = [
         ('product_unit_unique', 'unique(product_id, unit_index)', 'Each product unit must be unique.'),
@@ -341,6 +360,210 @@ class KioAssetDashboardService(models.AbstractModel):
             {'label': 'Monthly Depreciation', 'value': self._format_money(0.0), 'icon': 'fa-clock-o', 'tone': 'purple'},
             {'label': 'Yearly Depreciation', 'value': self._format_money(0.0), 'icon': 'fa-calendar', 'tone': 'orange'},
         ]
+
+
+    @api.model
+    def get_depreciation_dashboard_data(self, asset_id=False):
+        rows = self._current_asset_rows()
+        selected = self._select_asset_row(rows, asset_id)
+        journals = self.env['account.journal'].sudo().search([('type', '=', 'general')], order='name asc')
+        if not selected:
+            return {
+                'assetOptions': [],
+                'methodOptions': self._depreciation_method_options(),
+                'fiscalYearOptions': self._fiscal_year_options(),
+                'journalOptions': [{'id': journal.id, 'name': journal.display_name} for journal in journals],
+                'selectedAssetId': False,
+                'filters': {},
+                'assetInfo': {},
+                'summary': {},
+                'progress': {},
+                'scheduleRows': [],
+                'totals': {},
+                'automation': {},
+                'preview': {},
+                'emptyMessage': 'No asset records are available for depreciation.',
+            }
+
+        unit = self.env['kio.asset.unit'].sudo().browse(selected['id'])
+        product = unit.product_id
+        purchase_value = selected.get('unitPrice') or 0.0
+        residual_value = unit.residual_value or 0.0
+        useful_life = max(unit.useful_life_years or 0, 1)
+        start_date = unit.depreciation_start_date or self._parse_row_date(selected.get('purchaseDate')) or fields.Date.context_today(self)
+        months = useful_life * 12
+        depreciable = max(purchase_value - residual_value, 0.0)
+        monthly_amount = depreciable / months if months else 0.0
+        annual_amount = monthly_amount * 12.0
+        schedule = self._depreciation_schedule(unit, start_date, months, purchase_value, residual_value, monthly_amount)
+        posted_rows = [line for line in schedule if line['status'] == 'Posted']
+        completed = sum(line['depreciationAmountRaw'] for line in posted_rows)
+        if not posted_rows and schedule:
+            today = fields.Date.context_today(self)
+            completed = sum(line['depreciationAmountRaw'] for line in schedule if line['toDateRaw'] < today)
+        completed = min(completed, depreciable)
+        book_today = max(purchase_value - completed, residual_value)
+        progress_percent = (completed / depreciable * 100.0) if depreciable else 0.0
+        fiscal_start = date(start_date.year, 1, 1)
+        fiscal_end = date(start_date.year, 12, 31)
+        next_line = next((line for line in schedule if line['status'] != 'Posted'), schedule[-1] if schedule else {})
+        selected_journal = unit.depreciation_journal_id or (journals[:1] if journals else self.env['account.journal'])
+
+        return {
+            'assetOptions': [{'id': row['id'], 'label': '%s (%s)' % (row['name'], row['code'])} for row in rows],
+            'methodOptions': self._depreciation_method_options(),
+            'fiscalYearOptions': self._fiscal_year_options(start_date),
+            'journalOptions': [{'id': journal.id, 'name': journal.display_name} for journal in journals],
+            'selectedAssetId': unit.id,
+            'filters': {
+                'assetId': unit.id,
+                'method': unit.depreciation_method or 'straight_line',
+                'fiscalYear': '%s:%s' % (fields.Date.to_string(fiscal_start), fields.Date.to_string(fiscal_end)),
+                'fromDate': fields.Date.to_string(start_date),
+                'toDate': fields.Date.to_string(start_date + relativedelta(months=months, days=-1)),
+            },
+            'assetInfo': {
+                'imageUrl': selected.get('imageUrl') or '',
+                'icon': selected.get('icon') or 'fa-cube',
+                'assetCode': unit.asset_code,
+                'assetName': selected.get('name') or product.display_name,
+                'category': selected.get('category') or product.categ_id.display_name or '-',
+                'purchaseDate': selected.get('purchaseDate') or '-',
+                'purchasePrice': self._format_money(purchase_value),
+                'residualValue': self._format_money(residual_value),
+                'usefulLife': '%s Years' % useful_life,
+                'depreciationStartDate': self._format_date(start_date),
+            },
+            'summary': {
+                'method': self._depreciation_method_label(unit.depreciation_method),
+                'usefulLife': '%s Years' % useful_life,
+                'residualValue': self._format_money(residual_value),
+                'depreciationStartDate': self._format_date(start_date),
+                'annualDepreciation': self._format_money(annual_amount),
+                'monthlyDepreciation': self._format_money(monthly_amount),
+                'depreciableAmount': self._format_money(depreciable),
+                'bookValueToday': self._format_money(book_today),
+                'bookValueTone': 'green' if book_today > residual_value else 'orange',
+            },
+            'progress': {
+                'percent': min(progress_percent, 100.0),
+                'percentText': '%.2f%%' % min(progress_percent, 100.0),
+                'elapsedTime': self._elapsed_depreciation_time(start_date),
+                'completedDepreciation': self._format_money(completed),
+                'remainingDepreciation': self._format_money(max(depreciable - completed, 0.0)),
+                'endingBookValue': self._format_money(residual_value),
+            },
+            'scheduleRows': schedule,
+            'totals': {
+                'days': sum(line['days'] for line in schedule),
+                'depreciationAmount': self._format_money(sum(line['depreciationAmountRaw'] for line in schedule)),
+                'accumulatedDepreciation': self._format_money(schedule[-1]['accumulatedRaw'] if schedule else 0.0),
+                'closingBookValue': self._format_money(schedule[-1]['closingRaw'] if schedule else purchase_value),
+            },
+            'automation': {
+                'autoCreate': bool(unit.auto_create_journal_entries),
+                'createJournal': unit.create_journal_frequency or 'monthly',
+                'nextRunDate': next_line.get('fromDateRaw') and fields.Date.to_string(next_line['fromDateRaw']) or fields.Date.to_string(start_date),
+                'journalId': selected_journal.id if selected_journal else False,
+                'journalName': selected_journal.display_name if selected_journal else '-',
+            },
+            'preview': {
+                'nextRunDate': next_line.get('fromDate') or '-',
+                'depreciationAmount': next_line.get('depreciationAmount') or self._format_money(0.0),
+                'closingBookValue': next_line.get('closingBookValue') or self._format_money(book_today),
+                'note': 'System will automatically create journal entry on the next run date.' if unit.auto_create_journal_entries else 'Enable automation to create journal entries automatically.',
+            },
+            'emptyMessage': '',
+        }
+
+    def _current_asset_rows(self):
+        products = self._get_asset_products()
+        purchase_map = self._get_purchase_financials(products)
+        base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products[:80]]
+        self._sync_asset_units(base_rows)
+        return sorted(self._expand_rows_by_quantity(base_rows), key=lambda row: row['code'], reverse=True)
+
+    def _select_asset_row(self, rows, asset_id=False):
+        if asset_id:
+            asset_id = int(asset_id)
+            return next((row for row in rows if row.get('id') == asset_id), False)
+        return rows[0] if rows else False
+
+    def _depreciation_method_options(self):
+        return [{'value': value, 'label': label} for value, label in self.env['kio.asset.unit']._fields['depreciation_method'].selection]
+
+    def _depreciation_method_label(self, method):
+        return dict(self.env['kio.asset.unit']._fields['depreciation_method'].selection).get(method or 'straight_line', 'Straight Line')
+
+    def _fiscal_year_options(self, start_date=False):
+        today = start_date or fields.Date.context_today(self)
+        years = [today.year - 1, today.year, today.year + 1]
+        return [{
+            'value': '%s:%s' % (fields.Date.to_string(date(year, 1, 1)), fields.Date.to_string(date(year, 12, 31))),
+            'label': 'FY %s (01 Jan %s - 31 Dec %s)' % (year, year, year),
+        } for year in years]
+
+    def _parse_row_date(self, value):
+        if not value or value == '-':
+            return False
+        try:
+            return fields.Date.from_string(value)
+        except Exception:
+            return False
+
+    def _depreciation_schedule(self, unit, start_date, months, purchase_value, residual_value, monthly_amount):
+        moves = self._asset_depreciation_moves(unit)
+        move_by_period = {fields.Date.to_string(move.date.replace(day=1)): move for move in moves if move.date}
+        rows = []
+        opening = purchase_value
+        accumulated = 0.0
+        for index in range(months):
+            period_start = start_date + relativedelta(months=index)
+            last_day = calendar.monthrange(period_start.year, period_start.month)[1]
+            period_end = period_start.replace(day=last_day)
+            amount = min(monthly_amount, max(opening - residual_value, 0.0))
+            accumulated += amount
+            closing = max(opening - amount, residual_value)
+            move = move_by_period.get(fields.Date.to_string(period_start.replace(day=1)))
+            status = 'Posted' if move and move.state == 'posted' else ('Draft' if move else 'To Post')
+            rows.append({
+                'sequence': index + 1,
+                'period': period_start.strftime('%b %Y'),
+                'fromDate': self._format_date(period_start),
+                'toDate': self._format_date(period_end),
+                'fromDateRaw': period_start,
+                'toDateRaw': period_end,
+                'days': (period_end - period_start).days + 1,
+                'openingBookValue': self._format_money(opening),
+                'depreciationAmount': self._format_money(amount),
+                'depreciationAmountRaw': amount,
+                'accumulatedDepreciation': self._format_money(accumulated),
+                'accumulatedRaw': accumulated,
+                'closingBookValue': self._format_money(closing),
+                'closingRaw': closing,
+                'status': status,
+                'statusTone': 'green' if status == 'Posted' else ('slate' if status == 'Draft' else 'orange'),
+                'journalEntry': move.name if move else '-',
+                'journalEntryId': move.id if move else False,
+            })
+            opening = closing
+        return rows
+
+    def _asset_depreciation_moves(self, unit):
+        return self.env['account.move'].sudo().search([
+            ('move_type', '=', 'entry'),
+            '|', ('ref', 'ilike', unit.asset_code), ('name', 'ilike', unit.asset_code),
+        ], order='date asc, id asc')
+
+    def _elapsed_depreciation_time(self, start_date):
+        today = fields.Date.context_today(self)
+        if today <= start_date:
+            return '0 Months'
+        months = (today.year - start_date.year) * 12 + today.month - start_date.month
+        if months >= 12:
+            years = months // 12
+            return '%s Year%s' % (years, '' if years == 1 else 's')
+        return '%s Month%s' % (months, '' if months == 1 else 's')
 
     def _format_money(self, amount):
         symbol = self.env.company.currency_id.symbol or '৳'

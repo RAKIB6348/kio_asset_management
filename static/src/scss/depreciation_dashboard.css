@@ -1,0 +1,489 @@
+
+.kio_depr_page,
+.kio_depr_page * {
+    box-sizing: border-box;
+}
+
+.kio_depr_page {
+    min-height: 100%;
+    width: 100%;
+    padding: 24px 28px 40px;
+    background: #f6f8fc;
+    color: #071b4d;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.kio_depr_header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.kio_depr_heading h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.15;
+    font-weight: 800;
+    color: #081b4b;
+}
+
+.kio_depr_breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.kio_depr_breadcrumb button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #155dfc;
+    font: inherit;
+}
+
+.kio_depr_actions,
+.kio_depr_card_header > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.kio_depr_btn,
+.kio_depr_card_header button {
+    min-height: 40px;
+    padding: 0 18px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.kio_depr_btn:hover,
+.kio_depr_card_header button:hover,
+.kio_depr_icon_btn:hover {
+    transform: translateY(-1px);
+}
+
+.kio_depr_btn_green {
+    background: #10a861;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(16, 168, 97, .18);
+}
+
+.kio_depr_btn_blue {
+    background: #155dfc;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(21, 93, 252, .18);
+}
+
+.kio_depr_btn_outline,
+.kio_depr_card_header button {
+    background: #fff;
+    color: #155dfc;
+    border-color: #b9ccff;
+}
+
+.kio_depr_main {
+    display: grid;
+    gap: 18px;
+}
+
+.kio_depr_filter_card,
+.kio_depr_card {
+    background: #fff;
+    border: 1px solid #dfe7f3;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+}
+
+.kio_depr_filter_card {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.2fr) minmax(170px, .7fr) minmax(260px, 1fr) minmax(160px, .6fr) minmax(160px, .6fr);
+    gap: 18px;
+    padding: 18px 22px;
+}
+
+.kio_depr_filter_card label,
+.kio_depr_automation_grid label {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.kio_depr_filter_card span,
+.kio_depr_automation_grid span,
+.kio_depr_info_grid span,
+.kio_depr_summary_grid span,
+.kio_depr_progress_facts span,
+.kio_depr_preview_grid span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #42526f;
+}
+
+.kio_depr_filter_card select,
+.kio_depr_filter_card input,
+.kio_depr_automation_grid select,
+.kio_depr_automation_grid input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #ccd8ea;
+    border-radius: 6px;
+    background: #fff;
+    color: #071b4d;
+    padding: 0 12px;
+    font-size: 13px;
+    outline: none;
+}
+
+.kio_depr_filter_card select:focus,
+.kio_depr_filter_card input:focus,
+.kio_depr_automation_grid select:focus,
+.kio_depr_automation_grid input:focus {
+    border-color: #155dfc;
+    box-shadow: 0 0 0 3px rgba(21, 93, 252, .1);
+}
+
+.kio_depr_date {
+    position: relative;
+}
+
+.kio_depr_date i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #50617e;
+    pointer-events: none;
+}
+
+.kio_depr_top_grid,
+.kio_depr_bottom_grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+}
+
+.kio_depr_card {
+    padding: 20px 22px;
+    min-width: 0;
+}
+
+.kio_depr_card h2,
+.kio_depr_card_header h2 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: #071b4d;
+}
+
+.kio_depr_asset_body {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 24px;
+    align-items: center;
+    margin-top: 24px;
+}
+
+.kio_depr_asset_image {
+    width: 190px;
+    height: 126px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #4c5f7f;
+}
+
+.kio_depr_asset_image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.kio_depr_asset_image i {
+    font-size: 82px;
+    color: #7585a1;
+}
+
+.kio_depr_info_grid,
+.kio_depr_summary_grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 34px;
+}
+
+.kio_depr_summary_grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 22px;
+}
+
+.kio_depr_info_grid div,
+.kio_depr_summary_grid div,
+.kio_depr_progress_facts div,
+.kio_depr_preview_grid div {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+}
+
+.kio_depr_info_grid strong,
+.kio_depr_summary_grid strong,
+.kio_depr_progress_facts strong,
+.kio_depr_preview_grid strong {
+    font-size: 14px;
+    color: #071b4d;
+    overflow-wrap: anywhere;
+}
+
+.kio_depr_value_green {
+    color: #0f9d58 !important;
+}
+
+.kio_depr_value_orange {
+    color: #f97316 !important;
+}
+
+.kio_depr_progress_block {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid #dfe7f3;
+}
+
+.kio_depr_progress_block > div:first-child {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.kio_depr_progress {
+    height: 9px;
+    border-radius: 999px;
+    background: #e4e9f2;
+    overflow: hidden;
+}
+
+.kio_depr_progress span {
+    display: block;
+    height: 100%;
+    max-width: 100%;
+    border-radius: inherit;
+    background: #155dfc;
+}
+
+.kio_depr_progress_facts,
+.kio_depr_preview_grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 22px;
+}
+
+.kio_depr_preview_grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kio_depr_card_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.kio_depr_table_wrap {
+    overflow-x: auto;
+    border: 1px solid #e3e9f4;
+    border-radius: 7px;
+}
+
+.kio_depr_table {
+    width: 100%;
+    min-width: 1120px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.kio_depr_table th,
+.kio_depr_table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid #edf1f7;
+    white-space: nowrap;
+}
+
+.kio_depr_table th {
+    background: #f8fafc;
+    color: #071b4d;
+    font-weight: 800;
+}
+
+.kio_depr_table tbody tr:hover {
+    background: #f8fbff;
+}
+
+.kio_depr_table tfoot td {
+    font-weight: 800;
+    color: #071b4d;
+    background: #fbfdff;
+}
+
+.kio_depr_badge {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.kio_depr_badge_green {
+    color: #137944;
+    background: #dcfce7;
+}
+
+.kio_depr_badge_orange {
+    color: #b45309;
+    background: #ffedd5;
+}
+
+.kio_depr_badge_slate {
+    color: #475569;
+    background: #e2e8f0;
+}
+
+.kio_depr_icon_btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #d5deed;
+    border-radius: 6px;
+    background: #fff;
+    color: #071b4d;
+    cursor: pointer;
+}
+
+.kio_depr_empty,
+.kio_depr_empty_row {
+    padding: 28px;
+    text-align: center;
+    color: #64748b;
+}
+
+.kio_depr_toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    margin: 18px 0;
+    font-size: 14px;
+    color: #071b4d;
+}
+
+.kio_depr_toggle input {
+    display: none;
+}
+
+.kio_depr_toggle em {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    border-radius: 999px;
+    background: #cbd5e1;
+    transition: background .15s ease;
+}
+
+.kio_depr_toggle em::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .15s ease;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, .2);
+}
+
+.kio_depr_toggle input:checked + em {
+    background: #10a861;
+}
+
+.kio_depr_toggle input:checked + em::after {
+    transform: translateX(18px);
+}
+
+.kio_depr_automation_grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.kio_depr_preview_card {
+    display: grid;
+    align-content: start;
+    gap: 18px;
+}
+
+.kio_depr_preview_card p {
+    margin: 0;
+    color: #53657f;
+    font-size: 13px;
+}
+
+@media (max-width: 1280px) {
+    .kio_depr_filter_card {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kio_depr_top_grid,
+    .kio_depr_bottom_grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .kio_depr_page {
+        padding: 18px 14px 32px;
+    }
+
+    .kio_depr_header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .kio_depr_actions {
+        justify-content: flex-start;
+    }
+
+    .kio_depr_filter_card,
+    .kio_depr_summary_grid,
+    .kio_depr_progress_facts,
+    .kio_depr_preview_grid,
+    .kio_depr_automation_grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_depr_asset_body {
+        grid-template-columns: 1fr;
+    }
+
+    .kio_depr_asset_image {
+        width: 100%;
+        max-width: 260px;
+        justify-self: center;
+    }
+}

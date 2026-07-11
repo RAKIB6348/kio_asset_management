@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="kio_asset_management.DepreciationDashboard" owl="1">
+        <div class="kio_depr_page">
+            <header class="kio_depr_header">
+                <div class="kio_depr_heading">
+                    <h1>Depreciation Management</h1>
+                    <nav class="kio_depr_breadcrumb" aria-label="Breadcrumb">
+                        <button type="button">Dashboard</button>
+                        <i class="fa fa-angle-right"/>
+                        <button type="button">Depreciation</button>
+                        <i class="fa fa-angle-right"/>
+                        <strong>Depreciation Board</strong>
+                    </nav>
+                </div>
+                <div class="kio_depr_actions">
+                    <button class="kio_depr_btn kio_depr_btn_green" type="button" t-on-click="runDepreciation">Run Depreciation</button>
+                    <button class="kio_depr_btn kio_depr_btn_blue" type="button" t-on-click="createJournalEntries">Create Journal Entries</button>
+                    <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="moreActions">More Actions <i class="fa fa-angle-down"/></button>
+                </div>
+            </header>
+
+            <main class="kio_depr_main">
+                <section class="kio_depr_filter_card">
+                    <label><span>Asset</span><select t-att-value="state.selectedAssetId || ''" t-on-change="onAssetChange"><option value="">Select Asset</option><t t-foreach="state.data.assetOptions" t-as="asset" t-key="asset.id"><option t-att-value="asset.id" t-esc="asset.label"/></t></select></label>
+                    <label><span>Depreciation Method</span><select t-att-value="state.data.filters.method" t-on-change="onMethodChange"><t t-foreach="state.data.methodOptions" t-as="method" t-key="method.value"><option t-att-value="method.value" t-esc="method.label"/></t></select></label>
+                    <label><span>Fiscal Year</span><select t-att-value="state.data.filters.fiscalYear" t-on-change="onFiscalYearChange"><t t-foreach="state.data.fiscalYearOptions" t-as="year" t-key="year.value"><option t-att-value="year.value" t-esc="year.label"/></t></select></label>
+                    <label><span>From Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.fromDate" t-on-change="onFromDateChange"/><i class="fa fa-calendar"/></div></label>
+                    <label><span>To Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.toDate" t-on-change="onToDateChange"/><i class="fa fa-calendar"/></div></label>
+                </section>
+
+                <t t-if="state.data.emptyMessage">
+                    <section class="kio_depr_empty" t-esc="state.data.emptyMessage"/>
+                </t>
+                <t t-else="">
+                    <section class="kio_depr_top_grid">
+                        <article class="kio_depr_card kio_depr_asset_card">
+                            <h2>Asset Information</h2>
+                            <div class="kio_depr_asset_body">
+                                <div class="kio_depr_asset_image"><img t-if="state.data.assetInfo.imageUrl" t-att-src="state.data.assetInfo.imageUrl" t-att-alt="state.data.assetInfo.assetName"/><i t-else="" t-attf-class="fa #{state.data.assetInfo.icon || 'fa-cube'}"/></div>
+                                <div class="kio_depr_info_grid">
+                                    <div><span>Asset Code</span><strong t-esc="state.data.assetInfo.assetCode"/></div>
+                                    <div><span>Purchase Price</span><strong t-esc="state.data.assetInfo.purchasePrice"/></div>
+                                    <div><span>Asset Name</span><strong t-esc="state.data.assetInfo.assetName"/></div>
+                                    <div><span>Residual Value</span><strong t-esc="state.data.assetInfo.residualValue"/></div>
+                                    <div><span>Category</span><strong t-esc="state.data.assetInfo.category"/></div>
+                                    <div><span>Useful Life</span><strong t-esc="state.data.assetInfo.usefulLife"/></div>
+                                    <div><span>Purchase Date</span><strong t-esc="state.data.assetInfo.purchaseDate"/></div>
+                                    <div><span>Depreciation Start Date</span><strong t-esc="state.data.assetInfo.depreciationStartDate"/></div>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="kio_depr_card kio_depr_summary_card">
+                            <h2>Depreciation Summary</h2>
+                            <div class="kio_depr_summary_grid">
+                                <div><span>Depreciation Method</span><strong t-esc="state.data.summary.method"/></div>
+                                <div><span>Useful Life (Years)</span><strong t-esc="state.data.summary.usefulLife"/></div>
+                                <div><span>Depreciation Start Date</span><strong t-esc="state.data.summary.depreciationStartDate"/></div>
+                                <div><span>Residual Value</span><strong t-esc="state.data.summary.residualValue"/></div>
+                                <div><span>Annual Depreciation</span><strong t-esc="state.data.summary.annualDepreciation"/></div>
+                                <div><span>Monthly Depreciation</span><strong t-esc="state.data.summary.monthlyDepreciation"/></div>
+                                <div><span>Depreciable Amount</span><strong t-esc="state.data.summary.depreciableAmount"/></div>
+                                <div><span>Book Value Today</span><strong t-attf-class="kio_depr_value_#{state.data.summary.bookValueTone}" t-esc="state.data.summary.bookValueToday"/></div>
+                            </div>
+                            <div class="kio_depr_progress_block">
+                                <div><span>Depreciation Progress</span><strong t-esc="state.data.progress.percentText"/></div>
+                                <div class="kio_depr_progress"><span t-att-style="'width:' + state.data.progress.percent + '%'"/></div>
+                            </div>
+                            <div class="kio_depr_progress_facts">
+                                <div><span>Elapsed Time</span><strong t-esc="state.data.progress.elapsedTime"/></div>
+                                <div><span>Completed Depreciation</span><strong t-esc="state.data.progress.completedDepreciation"/></div>
+                                <div><span>Remaining Depreciation</span><strong t-esc="state.data.progress.remainingDepreciation"/></div>
+                                <div><span>Ending Book Value</span><strong t-esc="state.data.progress.endingBookValue"/></div>
+                            </div>
+                        </article>
+                    </section>
+
+                    <section class="kio_depr_card kio_depr_schedule_card">
+                        <div class="kio_depr_card_header"><h2>Depreciation Schedule</h2><div><button type="button"><i class="fa fa-magic"/> Generate Schedule</button><button type="button" aria-label="Download"><i class="fa fa-download"/></button></div></div>
+                        <div class="kio_depr_table_wrap">
+                            <table class="kio_depr_table">
+                                <thead><tr><th>#</th><th>Period</th><th>From Date</th><th>To Date</th><th>Days</th><th>Opening Book Value</th><th>Depreciation Amount</th><th>Accumulated Depreciation</th><th>Closing Book Value</th><th>Status</th><th>Journal Entry</th><th>Actions</th></tr></thead>
+                                <tbody>
+                                    <t t-if="!state.data.scheduleRows.length"><tr><td colspan="12" class="kio_depr_empty_row">No depreciation schedule lines are available.</td></tr></t>
+                                    <t t-foreach="state.data.scheduleRows" t-as="row" t-key="row.sequence">
+                                        <tr><td t-esc="row.sequence"/><td t-esc="row.period"/><td t-esc="row.fromDate"/><td t-esc="row.toDate"/><td t-esc="row.days"/><td t-esc="row.openingBookValue"/><td t-esc="row.depreciationAmount"/><td t-esc="row.accumulatedDepreciation"/><td t-esc="row.closingBookValue"/><td><span t-attf-class="kio_depr_badge kio_depr_badge_#{row.statusTone}" t-esc="row.status"/></td><td><a t-if="row.journalEntryId" href="#" t-on-click.prevent="() => this.openJournalEntry(row.journalEntryId)" t-esc="row.journalEntry"/><span t-else="" t-esc="row.journalEntry"/></td><td><button class="kio_depr_icon_btn" type="button" t-on-click="() => this.viewScheduleLine(row)"><i class="fa fa-eye"/></button></td></tr>
+                                    </t>
+                                </tbody>
+                                <tfoot><tr><td colspan="4">Total</td><td t-esc="state.data.totals.days"/><td></td><td t-esc="state.data.totals.depreciationAmount"/><td t-esc="state.data.totals.accumulatedDepreciation"/><td t-esc="state.data.totals.closingBookValue"/><td colspan="3"></td></tr></tfoot>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="kio_depr_bottom_grid">
+                        <article class="kio_depr_card">
+                            <h2>Automation Settings</h2>
+                            <label class="kio_depr_toggle"><span>Auto Create Journal Entries</span><input type="checkbox" t-att-checked="state.data.automation.autoCreate" t-on-change="onAutoCreateChange"/><em/></label>
+                            <div class="kio_depr_automation_grid">
+                                <label><span>Create Journal</span><select t-att-value="state.data.automation.createJournal" t-on-change="onCreateJournalChange"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select></label>
+                                <label><span>Next Run Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.automation.nextRunDate" t-on-change="onNextRunDateChange"/><i class="fa fa-calendar"/></div></label>
+                                <label><span>Journal</span><select t-att-value="state.data.automation.journalId || ''" t-on-change="onJournalChange"><option value="">Select Journal</option><t t-foreach="state.data.journalOptions" t-as="journal" t-key="journal.id"><option t-att-value="journal.id" t-esc="journal.name"/></t></select></label>
+                            </div>
+                        </article>
+                        <article class="kio_depr_card kio_depr_preview_card">
+                            <h2>Next Depreciation Preview</h2>
+                            <div class="kio_depr_preview_grid"><div><span>Next Run Date</span><strong t-esc="state.data.preview.nextRunDate"/></div><div><span>Depreciation Amount</span><strong t-esc="state.data.preview.depreciationAmount"/></div><div><span>Closing Book Value</span><strong t-esc="state.data.preview.closingBookValue"/></div></div>
+                            <p t-esc="state.data.preview.note"/>
+                            <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="previewJournalEntry">Preview Journal Entry</button>
+                        </article>
+                    </section>
+                </t>
+            </main>
+        </div>
+    </t>
+</templates>

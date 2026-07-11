@@ -119,11 +119,7 @@
                                             <div class="kio_row_actions">
                                                 <button type="button" aria-label="View asset" t-on-click="() => this.openAssetDetails(row)"><i class="fa fa-eye"/></button>
                                                 <button type="button" aria-label="Edit asset" title="Edit Asset" t-on-click.stop="() => this.openEditAsset(row.id)"><i class="fa fa-pencil-square-o"/></button>
-                                                <button type="button" 
-                aria-label="View Depreciation" 
-                title="Depreciation">
-            <i class="fa fa-line-chart"/>
-        </button>
+                                                <button type="button" aria-label="View Depreciation" title="Depreciation" t-on-click.stop="() => this.openDepreciationBoard(row.id)"><i class="fa fa-line-chart"/></button>
                                                 <button type="button" aria-label="More options"><i class="fa fa-ellipsis-v"/></button>
                                             </div>
                                         </td>

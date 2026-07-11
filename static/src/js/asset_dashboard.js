@@ -12,6 +12,7 @@ export class AssetDashboard extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.actionService = useService("action");
         this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10, assetFormMode: "create", editingAssetId: false, imageVersion: 0 });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -336,6 +337,22 @@ export class AssetDashboard extends Component {
 
     printAssetLabel() {
         console.info("Print Label", this.selectedAsset);
+    }
+
+    openDepreciationBoard(assetId) {
+        if (!assetId) {
+            return;
+        }
+        return this.actionService.doAction({
+            type: "ir.actions.client",
+            tag: "kio_asset_management.depreciation_dashboard",
+            target: "current",
+            context: {
+                active_asset_id: assetId,
+                asset_id: assetId,
+                depreciation_asset_id: assetId,
+            },
+        });
     }
 
     openDashboard() {

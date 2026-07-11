@@ -7,6 +7,12 @@
             <field name="target">current</field>
         </record>
 
+        <record id="action_depreciation_management_dashboard" model="ir.actions.client">
+            <field name="name">Depreciation Management</field>
+            <field name="tag">kio_asset_management.depreciation_dashboard</field>
+            <field name="target">current</field>
+        </record>
+
         <menuitem id="menu_asset_management_root"
                   name="Asset Management"
                   sequence="10"/>
@@ -16,5 +22,11 @@
                   parent="menu_asset_management_root"
                   action="action_asset_management_dashboard"
                   sequence="10"/>
+
+        <menuitem id="menu_asset_management_depreciation"
+                  name="Depreciation"
+                  parent="menu_asset_management_root"
+                  action="action_depreciation_management_dashboard"
+                  sequence="20"/>
     </data>
 </odoo>

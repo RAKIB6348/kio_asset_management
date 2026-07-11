@@ -19,7 +19,7 @@ export const addAssetFormState = {
     roomArea: "Room 305",
     department: "IT Department",
     assignTo: "John Doe",
-    assignToId: false,
+    assignToId: "",
     employeeId: "EMP-1001",
     assignDate: "21/05/2024",
     expectedReturnDate: "",

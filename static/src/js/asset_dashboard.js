@@ -86,7 +86,10 @@ export class AssetDashboard extends Component {
         try {
             const data = await this.orm.call("kio.asset.dashboard.service", "get_asset_dashboard_data", []);
             if (data) {
-                this.employeeOptions = data.employeeOptions || this.employeeOptions;
+                this.employeeOptions = (data.employeeOptions || this.employeeOptions).map((employee) => ({
+                    ...employee,
+                    idValue: `${employee.id}`,
+                }));
             }
             if (data && data.assetRows && data.assetRows.length) {
                 this.kpis = data.kpis || this.kpis;
@@ -213,7 +216,7 @@ export class AssetDashboard extends Component {
             location: row.location,
             department: row.locationMeta || "",
             assignTo: row.assignedTo,
-            assignToId: row.assignedToId || false,
+            assignToId: row.assignedToId ? String(row.assignedToId) : "",
             employeeId: row.employeeCode || "-",
             imagePreviewUrl: row.imageUrl || "",
             imageBinary: false,
@@ -253,8 +256,8 @@ export class AssetDashboard extends Component {
     }
 
     onAssignToChange(event) {
-        const employeeId = Number(event.target.value) || false;
-        const employee = this.employeeOptions.find((item) => item.id === employeeId);
+        const employeeId = event.target.value || "";
+        const employee = this.employeeOptions.find((item) => item.idValue === employeeId);
         this.addAssetForm.assignToId = employeeId;
         this.addAssetForm.assignTo = employee ? employee.name : "";
         this.addAssetForm.employeeId = employee ? (employee.employeeCode || "-") : "-";
@@ -299,7 +302,7 @@ export class AssetDashboard extends Component {
             roomArea: this.selectedAsset.location.roomArea,
             department: this.selectedAsset.location.department,
             assignTo: this.selectedAsset.assignment.assignedTo,
-            assignToId: this.selectedAsset.assignment.assignedToId || false,
+            assignToId: this.selectedAsset.assignment.assignedToId ? String(this.selectedAsset.assignment.assignedToId) : "",
             employeeId: this.selectedAsset.assignment.employeeId,
             assignDate: this.selectedAsset.assignment.assignDate,
             expectedReturnDate: this.selectedAsset.assignment.expectedReturn,

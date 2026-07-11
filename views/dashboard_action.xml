@@ -23,10 +23,10 @@
                   action="action_asset_management_dashboard"
                   sequence="10"/>
 
-        <menuitem id="menu_asset_management_depreciation"
+        <!-- <menuitem id="menu_asset_management_depreciation"
                   name="Depreciation"
                   parent="menu_asset_management_root"
                   action="action_depreciation_management_dashboard"
-                  sequence="20"/>
+                  sequence="20"/> -->
     </data>
 </odoo>

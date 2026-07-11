@@ -339,7 +339,7 @@ export class AssetDashboard extends Component {
         console.info("Print Label", this.selectedAsset);
     }
 
-    openDepreciationBoard(assetId) {
+    openDepreciationBoard(assetId, lockAsset = false) {
         if (!assetId) {
             return;
         }
@@ -351,6 +351,7 @@ export class AssetDashboard extends Component {
                 active_asset_id: assetId,
                 asset_id: assetId,
                 depreciation_asset_id: assetId,
+                lock_asset_selection: Boolean(lockAsset),
             },
         });
     }

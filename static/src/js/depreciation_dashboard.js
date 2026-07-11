@@ -11,9 +11,12 @@ export class DepreciationDashboard extends Component {
         this.orm = useService("orm");
         this.actionService = useService("action");
         const context = (this.props.action && this.props.action.context) || {};
+        const sourceAssetId = context.active_asset_id || context.asset_id || context.depreciation_asset_id || false;
         this.state = useState({
             loaded: false,
-            selectedAssetId: context.active_asset_id || context.asset_id || false,
+            selectedAssetId: sourceAssetId,
+            lockedAssetId: context.lock_asset_selection ? sourceAssetId : false,
+            assetSelectionLocked: Boolean(context.lock_asset_selection && sourceAssetId),
             data: this.emptyData(),
         });
         onWillStart(async () => this.loadData(this.state.selectedAssetId));
@@ -38,13 +41,22 @@ export class DepreciationDashboard extends Component {
     }
 
     async loadData(assetId = false) {
-        const data = await this.orm.call("kio.asset.dashboard.service", "get_depreciation_dashboard_data", [assetId || false]);
+        const requestedAssetId = this.state.assetSelectionLocked ? this.state.lockedAssetId : assetId;
+        const data = await this.orm.call("kio.asset.dashboard.service", "get_depreciation_dashboard_data", [requestedAssetId || false]);
         this.state.data = data || this.emptyData();
         this.state.selectedAssetId = this.state.data.selectedAssetId || false;
+        if (this.state.assetSelectionLocked) {
+            this.state.lockedAssetId = this.state.selectedAssetId || this.state.lockedAssetId;
+            this.state.data.assetOptions = (this.state.data.assetOptions || []).filter((asset) => asset.id === this.state.lockedAssetId);
+        }
         this.state.loaded = true;
     }
 
     onAssetChange(event) {
+        if (this.state.assetSelectionLocked) {
+            event.target.value = this.state.lockedAssetId || this.state.selectedAssetId || "";
+            return;
+        }
         const assetId = Number(event.target.value) || false;
         this.loadData(assetId);
     }

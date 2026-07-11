@@ -20,6 +20,7 @@ class KioAssetUnit(models.Model):
     depreciation_method = fields.Selection([
         ('straight_line', 'Straight Line'),
         ('declining_balance', 'Declining Balance'),
+        ('purchase_date', 'Purchase Date'),
     ], string="Depreciation Method", default='straight_line')
     useful_life_years = fields.Integer(string="Useful Life (Years)", default=3)
     residual_value = fields.Monetary(string="Residual Value", currency_field='currency_id')

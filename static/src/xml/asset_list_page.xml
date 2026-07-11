@@ -118,7 +118,7 @@
                                         <td>
                                             <div class="kio_row_actions">
                                                 <button type="button" aria-label="View asset" t-on-click="() => this.openAssetDetails(row)"><i class="fa fa-eye"/></button>
-                                                <button type="button" aria-label="Edit asset"><i class="fa fa-pencil-square-o"/></button>
+                                                <button type="button" aria-label="Edit asset" t-on-click="editAsset"><i class="fa fa-pencil-square-o"/></button>
                                                 <button type="button" aria-label="More options"><i class="fa fa-ellipsis-v"/></button>
                                             </div>
                                         </td>

@@ -16,7 +16,7 @@
                         <strong>Asset List</strong>
                     </nav>
                 </div>
-                <div class="kio_asset_header_tools kio_list_tools">
+                <!-- <div class="kio_asset_header_tools kio_list_tools">
                     <label class="kio_asset_search kio_list_search">
                         <i class="fa fa-search"/>
                         <input type="search" placeholder="Search assets..." t-att-value="state.assetSearch" t-on-input="onAssetSearch"/>
@@ -30,7 +30,7 @@
                         <span class="kio_asset_badge">5</span>
                     </button>
                     <button class="kio_asset_avatar" type="button" aria-label="User profile"><span>AU</span></button>
-                </div>
+                </div> -->
             </header>
 
             <main class="kio_list_main">

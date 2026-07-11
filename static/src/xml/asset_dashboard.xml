@@ -8,7 +8,7 @@
                     <h1>Asset Management Dashboard</h1>
                     <p>Overview of your asset management</p>
                 </div>
-                <div class="kio_asset_header_tools">
+                <!-- <div class="kio_asset_header_tools">
                     <label class="kio_asset_search">
                         <i class="fa fa-search"/>
                         <input type="search" placeholder="Search assets, requests, locations..."/>
@@ -24,7 +24,7 @@
                     <button class="kio_asset_avatar" type="button" aria-label="User profile">
                         <span>AU</span>
                     </button>
-                </div>
+                </div> -->
             </header>
 
             <main class="kio_asset_main">

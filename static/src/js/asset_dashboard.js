@@ -13,7 +13,9 @@ export class AssetDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
-        this.state = useState({ page: "dashboard", previousPage: "dashboard", loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10, assetFormMode: "create", editingAssetId: false, imageVersion: 0 });
+        const context = (this.props.action && this.props.action.context) || {};
+        const initialPage = context.page || "dashboard";
+        this.state = useState({ page: initialPage, previousPage: initialPage, loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10, assetFormMode: "create", editingAssetId: false, imageVersion: 0 });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
         this.addAssetForm = addAssetFormState;

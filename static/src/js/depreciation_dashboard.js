@@ -99,7 +99,7 @@ export class DepreciationDashboard extends Component {
             tag: "kio_asset_management.asset_dashboard",
             target: "current",
             context: {
-                page: "dashboard",
+                page: "asset_list",
             },
         });
     }

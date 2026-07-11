@@ -245,8 +245,14 @@ export class AssetDashboard extends Component {
     async saveAsset() {
         if (this.state.assetFormMode === "edit" && this.state.editingAssetId) {
             await this.orm.call("kio.asset.dashboard.service", "update_asset_assignment", [this.state.editingAssetId, this.addAssetForm.assignToId || false]);
-            if (this.addAssetForm.imageChanged) {
-                await this.orm.call("kio.asset.dashboard.service", "update_asset_image", [this.state.editingAssetId, this.addAssetForm.imageBinary || false]);
+            if (this.addAssetForm.imageChanged && this.addAssetForm.imageBinary) {
+                const imageResult = await this.orm.call("kio.asset.dashboard.service", "update_asset_image", [this.state.editingAssetId, this.addAssetForm.imageBinary]);
+                if (imageResult && imageResult.imageUrl) {
+                    this.addAssetForm.imagePreviewUrl = `${imageResult.imageUrl}&client_refresh=${Date.now()}`;
+                }
+                this.addAssetForm.imageBinary = false;
+                this.addAssetForm.imageChanged = false;
+                this.state.imageVersion += 1;
             }
             await this.loadDynamicAssetData();
             this.closeAddAsset();

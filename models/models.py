@@ -231,22 +231,51 @@ class KioAssetDashboardService(models.AbstractModel):
     def _asset_row_image_url(self, unit):
         if unit.image_1920:
             return self._web_image_url('kio.asset.unit', unit.id, 'image_1920', unit.write_date)
+
         product = unit.product_id
         if product and 'image_1920' in product._fields and product.image_1920:
             return self._web_image_url('product.product', product.id, 'image_1920', product.write_date)
+
+        product_template = product.product_tmpl_id if product and product.product_tmpl_id else False
+        if product_template and 'image_1920' in product_template._fields and product_template.image_1920:
+            return self._web_image_url('product.template', product_template.id, 'image_1920', product_template.write_date)
+
         return False
 
     def _web_image_url(self, model, record_id, field_name, write_date):
-        unique = (fields.Datetime.to_string(write_date) if write_date else str(record_id)).replace(' ', '_')
+        if write_date:
+            unique_source = write_date.isoformat() if hasattr(write_date, 'isoformat') else str(write_date)
+            unique = unique_source.replace(' ', '_').replace(':', '').replace('.', '_')
+        else:
+            unique = str(record_id)
         return '/web/image/%s/%s/%s?unique=%s' % (model, record_id, field_name, unique)
 
     @api.model
     def update_asset_image(self, asset_id, image_1920):
         unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
-        if not unit.exists():
+        if not unit.exists() or not image_1920:
             return False
-        unit.write({'image_1920': image_1920 or False})
-        return True
+
+        image_values = {'image_1920': image_1920}
+        unit.write(image_values)
+
+        product = unit.product_id.sudo()
+        if product and 'image_1920' in product._fields:
+            product.write(image_values)
+        product_template = product.product_tmpl_id.sudo() if product and product.product_tmpl_id else False
+        if product_template and 'image_1920' in product_template._fields:
+            product_template.write(image_values)
+
+        unit.invalidate_recordset(['image_1920', 'write_date'])
+        if product:
+            product.invalidate_recordset(['image_1920', 'write_date'])
+        if product_template:
+            product_template.invalidate_recordset(['image_1920', 'write_date'])
+        return {
+            'assetId': unit.id,
+            'productId': product.id if product else False,
+            'imageUrl': self._asset_row_image_url(unit),
+        }
 
     @api.model
     def update_asset_assignment(self, asset_id, employee_id=False):

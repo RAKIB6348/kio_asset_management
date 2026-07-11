@@ -93,7 +93,9 @@ export class AssetDashboard extends Component {
                 this.locations = data.locations || this.locations;
                 this.depreciationSummary = data.depreciationSummary || this.depreciationSummary;
                 this.assignedAssets = data.assignedAssets || this.assignedAssets;
-                this.selectedAsset = this.assetDetailsByCode[this.assetRows[0].code] || buildAssetDetails(this.assetRows[0]);
+                const selectedCode = this.selectedAsset && this.selectedAsset.code;
+                const selectedRow = this.assetRows.find((row) => row.code === selectedCode) || this.assetRows[0];
+                this.selectedAsset = buildAssetDetails(selectedRow);
             }
         } catch (error) {
             console.warn("Asset dashboard dynamic data fallback", error);

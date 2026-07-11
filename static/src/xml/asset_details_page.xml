@@ -32,7 +32,7 @@
                 </div>
 
                 <section class="kio_details_summary_card">
-                    <div class="kio_details_asset_visual"><i class="fa fa-laptop"/></div>
+                    <div class="kio_details_asset_visual"><img t-if="selectedAsset.imageUrl" t-att-src="selectedAsset.imageUrl" t-att-alt="selectedAsset.name"/><i t-else="" class="fa fa-laptop"/></div>
                     <div class="kio_details_summary_body">
                         <div class="kio_details_name_row"><h2 t-esc="selectedAsset.name"/><span class="kio_status_badge kio_status_green" t-esc="selectedAsset.activeState"/></div>
                         <div class="kio_details_facts">

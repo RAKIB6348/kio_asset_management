@@ -51,9 +51,11 @@ export const assetDetailsByCode = {
 export function buildAssetDetails(row) {
     const existing = assetDetailsByCode[row.code];
     if (existing) {
-        return existing;
+        return { ...existing, id: row.id, imageUrl: row.imageUrl || existing.imageUrl || "" };
     }
     return {
+        id: row.id,
+        imageUrl: row.imageUrl || "",
         code: row.code,
         listCode: row.code,
         name: row.name,

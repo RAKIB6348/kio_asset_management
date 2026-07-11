@@ -213,6 +213,8 @@ export class AssetDashboard extends Component {
             location: row.location,
             department: row.locationMeta || "",
             assignTo: row.assignedTo,
+            assignToId: row.assignedToId || false,
+            employeeId: row.employeeCode || "-",
             imagePreviewUrl: row.imageUrl || "",
             imageBinary: false,
             imageChanged: false,
@@ -236,10 +238,11 @@ export class AssetDashboard extends Component {
 
     async saveAsset() {
         if (this.state.assetFormMode === "edit" && this.state.editingAssetId) {
+            await this.orm.call("kio.asset.dashboard.service", "update_asset_assignment", [this.state.editingAssetId, this.addAssetForm.assignToId || false]);
             if (this.addAssetForm.imageChanged) {
                 await this.orm.call("kio.asset.dashboard.service", "update_asset_image", [this.state.editingAssetId, this.addAssetForm.imageBinary || false]);
-                await this.loadDynamicAssetData();
             }
+            await this.loadDynamicAssetData();
             this.closeAddAsset();
             return;
         }
@@ -250,7 +253,11 @@ export class AssetDashboard extends Component {
     }
 
     onAssignToChange(event) {
-        this.addAssetForm.assignTo = event.target.value;
+        const employeeId = Number(event.target.value) || false;
+        const employee = this.employeeOptions.find((item) => item.id === employeeId);
+        this.addAssetForm.assignToId = employeeId;
+        this.addAssetForm.assignTo = employee ? employee.name : "";
+        this.addAssetForm.employeeId = employee ? (employee.employeeCode || "-") : "-";
     }
 
     onAssetImageChange(event) {
@@ -271,6 +278,8 @@ export class AssetDashboard extends Component {
 
     editAsset() {
         console.info("Edit Asset", this.selectedAsset);
+        this.state.assetFormMode = "edit";
+        this.state.editingAssetId = this.selectedAsset.id || false;
         Object.assign(this.addAssetForm, {
             assetCode: this.selectedAsset.code,
             assetName: this.selectedAsset.name,
@@ -290,6 +299,7 @@ export class AssetDashboard extends Component {
             roomArea: this.selectedAsset.location.roomArea,
             department: this.selectedAsset.location.department,
             assignTo: this.selectedAsset.assignment.assignedTo,
+            assignToId: this.selectedAsset.assignment.assignedToId || false,
             employeeId: this.selectedAsset.assignment.employeeId,
             assignDate: this.selectedAsset.assignment.assignDate,
             expectedReturnDate: this.selectedAsset.assignment.expectedReturn,
@@ -297,8 +307,12 @@ export class AssetDashboard extends Component {
             invoiceNumber: this.selectedAsset.invoiceNumber,
             poNumber: this.selectedAsset.poNumber,
             tagsNotes: this.selectedAsset.tagsNotes,
+            imagePreviewUrl: this.selectedAsset.imageUrl || "",
+            imageBinary: false,
+            imageChanged: false,
         });
-        this.openAddAsset();
+        this.state.previousPage = this.state.page;
+        this.state.page = "add_asset";
     }
 
     assignAsset() {

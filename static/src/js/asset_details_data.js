@@ -51,7 +51,18 @@ export const assetDetailsByCode = {
 export function buildAssetDetails(row) {
     const existing = assetDetailsByCode[row.code];
     if (existing) {
-        return { ...existing, id: row.id, imageUrl: row.imageUrl || existing.imageUrl || "" };
+        return {
+            ...existing,
+            id: row.id,
+            imageUrl: row.imageUrl || existing.imageUrl || "",
+            assignment: {
+                ...existing.assignment,
+                assignedTo: row.assignedTo || existing.assignment.assignedTo || "-",
+                assignedToId: row.assignedToId || false,
+                department: row.assignedMeta || existing.assignment.department || "-",
+                employeeId: row.employeeCode || existing.assignment.employeeId || "-",
+            },
+        };
     }
     return {
         id: row.id,
@@ -84,8 +95,9 @@ export function buildAssetDetails(row) {
         invoiceFile: "INV-2024-0158.pdf",
         assignment: {
             assignedTo: row.assignedTo || "-",
+            assignedToId: row.assignedToId || false,
             department: row.assignedMeta || "-",
-            employeeId: row.assignedTo === "-" ? "-" : "EMP-1001",
+            employeeId: row.employeeCode || "-",
             assignDate: "21 May 2024",
             expectedReturn: "-",
         },

@@ -13,6 +13,7 @@ class KioAssetUnit(models.Model):
     unit_index = fields.Integer(required=True, index=True)
     asset_code = fields.Char(required=True, copy=False, index=True)
     image_1920 = fields.Image("Asset Image", max_width=1920, max_height=1920)
+    assigned_employee_id = fields.Many2one("hr.employee", string="Assigned To", index=True, ondelete="set null")
 
     _sql_constraints = [
         ('product_unit_unique', 'unique(product_id, unit_index)', 'Each product unit must be unique.'),
@@ -69,7 +70,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _employee_options(self):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)], order='name asc')
-        return [{'id': employee.id, 'name': employee.name} for employee in employees]
+        return [{'id': employee.id, 'name': employee.name, 'employeeCode': employee.identification_id or employee.barcode or '-'} for employee in employees]
 
     def _get_asset_products(self):
         category = self.env['product.category'].search([('name', '=', 'Asset Category')], limit=1)
@@ -186,11 +187,18 @@ class KioAssetDashboardService(models.AbstractModel):
                 if not unit:
                     continue
                 asset_code = unit.asset_code
+                employee = unit.assigned_employee_id
                 expanded_row = dict(row)
                 expanded_row.update({
                     'id': unit.id,
                     'productId': product_id,
                     'imageUrl': self._asset_row_image_url(unit),
+                    'assignedTo': employee.name if employee else '-',
+                    'assignedToId': employee.id if employee else False,
+                    'assignedMeta': employee.department_id.name if employee and employee.department_id else '',
+                    'employeeCode': (employee.identification_id or employee.barcode or '-') if employee else '-',
+                    'status': 'Assigned' if employee else row.get('status', 'Available'),
+                    'tone': 'blue' if employee else row.get('tone', 'green'),
                     'code': asset_code,
                     'rowKey': '%s-%s' % (asset_code, index),
                     'qtyIndex': index,
@@ -218,6 +226,15 @@ class KioAssetDashboardService(models.AbstractModel):
         if not unit.exists():
             return False
         unit.write({'image_1920': image_1920 or False})
+        return True
+
+    @api.model
+    def update_asset_assignment(self, asset_id, employee_id=False):
+        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        if not unit.exists():
+            return False
+        employee_id = int(employee_id) if employee_id else False
+        unit.write({'assigned_employee_id': employee_id})
         return True
 
     @api.model
@@ -258,7 +275,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'expectedReturn': '-',
             'usefulLife': '-',
             'invoiceFile': row.get('invoiceNumber') or '-',
-            'assignment': {'assignedTo': row['assignedTo'], 'department': row['assignedMeta'], 'employeeId': '-', 'assignDate': '-', 'expectedReturn': '-'},
+            'assignment': {'assignedTo': row['assignedTo'], 'assignedToId': row.get('assignedToId') or False, 'department': row['assignedMeta'], 'employeeId': row.get('employeeCode') or '-', 'assignDate': '-', 'expectedReturn': '-'},
             'location': {'location': row['location'], 'buildingFloor': '-', 'roomArea': '-', 'department': row['locationMeta']},
             'maintenanceRows': [],
         }

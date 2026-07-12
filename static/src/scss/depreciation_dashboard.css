@@ -487,6 +487,11 @@
     background: #ffedd5;
 }
 
+.kio_depr_badge_red {
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
 .kio_depr_badge_slate {
     color: #475569;
     background: #e2e8f0;

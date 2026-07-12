@@ -117,6 +117,24 @@ export class DepreciationDashboard extends Component {
         this.state.data.automation.journalId = Number(event.target.value) || false;
     }
 
+    applyDashboardResult(result, fallbackMessage = "") {
+        if (!result) {
+            return;
+        }
+        if (result.selectedAssetId) {
+            this.state.data = result;
+            this.state.selectedAssetId = result.selectedAssetId;
+            if (this.state.assetSelectionLocked) {
+                this.state.lockedAssetId = this.state.selectedAssetId || this.state.lockedAssetId;
+                this.state.data.assetOptions = (this.state.data.assetOptions || []).filter((asset) => asset.id === this.state.lockedAssetId);
+            }
+            this.resetSummaryForm();
+            this.state.summaryEditMode = false;
+            this.state.summaryErrors = {};
+        }
+        this.state.summaryMessage = result.message || fallbackMessage || "";
+    }
+
     resetSummaryForm() {
         const inputs = this.state.data.summaryInputs || {};
         this.state.summaryForm = {
@@ -257,18 +275,10 @@ export class DepreciationDashboard extends Component {
         };
         const result = await this.orm.call("kio.asset.dashboard.service", "update_depreciation_summary", [this.state.selectedAssetId, payload]);
         if (result && result.success) {
-            this.state.data = result;
-            this.state.selectedAssetId = result.selectedAssetId || this.state.selectedAssetId;
-            if (this.state.assetSelectionLocked) {
-                this.state.lockedAssetId = this.state.selectedAssetId || this.state.lockedAssetId;
-                this.state.data.assetOptions = (this.state.data.assetOptions || []).filter((asset) => asset.id === this.state.lockedAssetId);
-            }
-            this.state.summaryMessage = result.message || "Depreciation Summary updated successfully.";
-            this.state.summaryErrors = {};
-            this.resetSummaryForm();
-            this.state.summaryEditMode = false;
+            this.applyDashboardResult(result, "Depreciation Summary updated successfully.");
             return;
         }
+        this.state.summaryMessage = (result && result.message) || "";
         this.state.summaryErrors = (result && result.errors) || {};
     }
 
@@ -283,12 +293,14 @@ export class DepreciationDashboard extends Component {
         });
     }
 
-    runDepreciation() {
-        console.info("Run depreciation", this.state.selectedAssetId);
+    async runDepreciation() {
+        const result = await this.orm.call("kio.asset.dashboard.service", "run_asset_depreciation", [this.state.selectedAssetId || false]);
+        this.applyDashboardResult(result, "Depreciation journal entry posted successfully.");
     }
 
-    createJournalEntries() {
-        console.info("Create journal entries", this.state.selectedAssetId);
+    async createJournalEntries() {
+        const result = await this.orm.call("kio.asset.dashboard.service", "create_depreciation_journal_entries", [this.state.selectedAssetId || false]);
+        this.applyDashboardResult(result, "Draft journal entries created successfully.");
     }
 
     moreActions() {

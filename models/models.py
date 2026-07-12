@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 from dateutil.relativedelta import relativedelta
 from datetime import date
 import calendar
@@ -429,13 +430,12 @@ class KioAssetDashboardService(models.AbstractModel):
         annual_amount = calculation['annual_amount']
         ending_book_value = calculation['ending_book_value']
         schedule = self._depreciation_schedule(unit, start_date, months, purchase_value, ending_book_value, monthly_amount)
+        schedule_rows = self._serialize_schedule(schedule)
         posted_rows = [line for line in schedule if line['status'] == 'Posted']
         completed = sum(line['depreciationAmountRaw'] for line in posted_rows)
-        if not posted_rows and schedule:
-            today = fields.Date.context_today(self)
-            completed = sum(line['depreciationAmountRaw'] for line in schedule if line['toDateRaw'] < today)
         completed = min(completed, depreciable)
         book_today = max(purchase_value - completed, ending_book_value)
+        book_today = max(book_today, residual_value, 0.0)
         progress_percent = (completed / depreciable * 100.0) if depreciable else 0.0
         fiscal_start = date(start_date.year, 1, 1)
         fiscal_end = date(start_date.year, 12, 31)
@@ -498,7 +498,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 'remainingDepreciation': self._format_money(max(depreciable - completed, 0.0)),
                 'endingBookValue': self._format_money(ending_book_value),
             },
-            'scheduleRows': schedule,
+            'scheduleRows': schedule_rows,
             'totals': {
                 'days': sum(line['days'] for line in schedule),
                 'depreciationAmount': self._format_money(sum(line['depreciationAmountRaw'] for line in schedule)),
@@ -520,6 +520,58 @@ class KioAssetDashboardService(models.AbstractModel):
             },
             'emptyMessage': '',
         }
+
+    @api.model
+    def create_depreciation_journal_entries(self, asset_id):
+        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        if not unit.exists():
+            return {'success': False, 'message': 'The selected asset no longer exists.'}
+
+        _calculation, schedule = self._asset_schedule_snapshot(unit)
+        journal = self._depreciation_journal(unit)
+        if not journal:
+            return {'success': False, 'message': 'Configure a depreciation journal before creating entries.'}
+
+        created = 0
+        for line in schedule:
+            if line['status'] != 'To Post':
+                continue
+            self._create_depreciation_move(unit, line, journal)
+            created += 1
+
+        data = self.get_depreciation_dashboard_data(unit.id)
+        data['success'] = True
+        data['message'] = 'Draft journal entries created successfully.' if created else 'No new journal entries were created.'
+        return data
+
+    @api.model
+    def run_asset_depreciation(self, asset_id):
+        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        if not unit.exists():
+            return {'success': False, 'message': 'The selected asset no longer exists.'}
+
+        _calculation, schedule = self._asset_schedule_snapshot(unit)
+        journal = self._depreciation_journal(unit)
+        if not journal:
+            return {'success': False, 'message': 'Configure a depreciation journal before posting depreciation.'}
+
+        next_line = next((line for line in schedule if line['status'] in ('Draft', 'To Post')), False)
+        if not next_line:
+            data = self.get_depreciation_dashboard_data(unit.id)
+            data['success'] = True
+            data['message'] = 'All depreciation entries are already posted.'
+            return data
+
+        move = next_line.get('moveRecord')
+        if not move:
+            move = self._create_depreciation_move(unit, next_line, journal)
+        if move.state != 'posted':
+            move.action_post()
+
+        data = self.get_depreciation_dashboard_data(unit.id)
+        data['success'] = True
+        data['message'] = 'Depreciation journal entry posted successfully.'
+        return data
 
     @api.model
     def update_depreciation_summary(self, asset_id, values):
@@ -597,6 +649,15 @@ class KioAssetDashboardService(models.AbstractModel):
         data['message'] = 'Depreciation Summary updated successfully.'
         return data
 
+    def _asset_schedule_snapshot(self, unit):
+        row = self._select_asset_row(self._current_asset_rows(), unit.id)
+        purchase_value = row.get('unitPrice') if row else 0.0
+        useful_life = max(unit.useful_life_years or 0, 1)
+        start_date = unit.depreciation_start_date or self._parse_row_date(row.get('purchaseDate') if row else False) or fields.Date.context_today(self)
+        calculation = self._depreciation_values(unit, purchase_value, useful_life)
+        schedule = self._depreciation_schedule(unit, start_date, calculation['months'], purchase_value, calculation['ending_book_value'], calculation['monthly_amount'])
+        return calculation, schedule
+
     def _current_asset_rows(self):
         products = self._get_asset_products()
         purchase_map = self._get_purchase_financials(products)
@@ -668,7 +729,7 @@ class KioAssetDashboardService(models.AbstractModel):
             accumulated += amount
             closing = max(opening - amount, ending_book_value)
             move = move_by_period.get(fields.Date.to_string(period_start.replace(day=1)))
-            status = 'Posted' if move and move.state == 'posted' else ('Draft' if move else 'To Post')
+            status = self._depreciation_move_status(move)
             rows.append({
                 'sequence': index + 1,
                 'period': period_start.strftime('%b %Y'),
@@ -685,9 +746,10 @@ class KioAssetDashboardService(models.AbstractModel):
                 'closingBookValue': self._format_money(closing),
                 'closingRaw': closing,
                 'status': status,
-                'statusTone': 'green' if status == 'Posted' else ('slate' if status == 'Draft' else 'orange'),
+                'statusTone': self._depreciation_status_tone(status),
                 'journalEntry': move.name if move else '-',
                 'journalEntryId': move.id if move else False,
+                'moveRecord': move,
             })
             opening = closing
         return rows
@@ -697,6 +759,84 @@ class KioAssetDashboardService(models.AbstractModel):
             ('move_type', '=', 'entry'),
             '|', ('ref', 'ilike', unit.asset_code), ('name', 'ilike', unit.asset_code),
         ], order='date asc, id asc')
+
+    def _serialize_schedule(self, schedule):
+        return [{
+            key: value for key, value in line.items() if key != 'moveRecord'
+        } for line in schedule]
+
+    def _depreciation_move_status(self, move):
+        if not move:
+            return 'To Post'
+        if move.state == 'posted':
+            return 'Posted'
+        if move.state == 'cancel':
+            return 'Cancelled'
+        return 'Draft'
+
+    def _depreciation_status_tone(self, status):
+        if status == 'Posted':
+            return 'green'
+        if status == 'Cancelled':
+            return 'red'
+        if status == 'Draft':
+            return 'slate'
+        return 'orange'
+
+    def _depreciation_journal(self, unit):
+        if unit.depreciation_journal_id:
+            return unit.depreciation_journal_id.sudo()
+        return self.env['account.journal'].sudo().search([
+            ('type', '=', 'general'),
+            ('company_id', 'in', [unit.company_id.id, False]),
+        ], order='company_id desc, id asc', limit=1)
+
+    def _depreciation_account(self, journal, unit):
+        if journal.default_account_id:
+            return journal.default_account_id
+        product = unit.product_id
+        template = product.product_tmpl_id
+        account = False
+        if 'property_account_expense_id' in product._fields:
+            account = product.property_account_expense_id
+        if not account and template and 'property_account_expense_id' in template._fields:
+            account = template.property_account_expense_id
+        if not account and product.categ_id and 'property_account_expense_categ_id' in product.categ_id._fields:
+            account = product.categ_id.property_account_expense_categ_id
+        if account:
+            return account
+        return self.env['account.account'].sudo().search([
+            ('company_id', '=', unit.company_id.id),
+            ('deprecated', '=', False),
+        ], order='id asc', limit=1)
+
+    def _create_depreciation_move(self, unit, schedule_line, journal):
+        account = self._depreciation_account(journal, unit)
+        if not account:
+            raise UserError('No valid account was found for depreciation entries.')
+        amount = schedule_line['depreciationAmountRaw']
+        period_label = schedule_line['period']
+        vals = {
+            'move_type': 'entry',
+            'date': schedule_line['toDateRaw'],
+            'journal_id': journal.id,
+            'ref': 'Depreciation %s %s' % (unit.asset_code, period_label),
+            'line_ids': [
+                (0, 0, {
+                    'name': 'Depreciation %s %s' % (unit.asset_code, period_label),
+                    'account_id': account.id,
+                    'debit': amount,
+                    'credit': 0.0,
+                }),
+                (0, 0, {
+                    'name': 'Depreciation %s %s' % (unit.asset_code, period_label),
+                    'account_id': account.id,
+                    'debit': 0.0,
+                    'credit': amount,
+                }),
+            ],
+        }
+        return self.env['account.move'].sudo().create(vals)
 
     def _elapsed_depreciation_time(self, start_date):
         today = fields.Date.context_today(self)

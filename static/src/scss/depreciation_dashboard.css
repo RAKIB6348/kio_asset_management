@@ -225,6 +225,63 @@
     min-width: 0;
 }
 
+.kio_depr_summary_head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.kio_depr_summary_actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.kio_depr_summary_edit,
+.kio_depr_summary_save,
+.kio_depr_summary_cancel {
+    min-height: 34px;
+    padding: 0 14px;
+    border-radius: 6px;
+    border: 1px solid #b9ccff;
+    background: #fff;
+    color: #155dfc;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.kio_depr_summary_save {
+    background: #155dfc;
+    color: #fff;
+    border-color: #155dfc;
+    box-shadow: 0 8px 18px rgba(21, 93, 252, .18);
+}
+
+.kio_depr_summary_edit:hover,
+.kio_depr_summary_save:hover,
+.kio_depr_summary_cancel:hover {
+    transform: translateY(-1px);
+}
+
+.kio_depr_summary_message {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #b7e4c7;
+    background: #f0fdf4;
+    color: #137944;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .kio_depr_card h2,
 .kio_depr_card_header h2 {
     margin: 0;
@@ -292,6 +349,30 @@
     font-size: 14px;
     color: #071b4d;
     overflow-wrap: anywhere;
+}
+
+.kio_depr_summary_input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid #ccd8ea;
+    border-radius: 6px;
+    background: #fff;
+    color: #071b4d;
+    padding: 0 12px;
+    font-size: 13px;
+    outline: none;
+}
+
+.kio_depr_summary_input:focus {
+    border-color: #155dfc;
+    box-shadow: 0 0 0 3px rgba(21, 93, 252, .1);
+}
+
+.kio_depr_summary_error {
+    display: block;
+    font-size: 11px;
+    color: #dc2626;
+    margin-top: -2px;
 }
 
 .kio_depr_value_green {
@@ -535,5 +616,10 @@
         width: 100%;
         max-width: 260px;
         justify-self: center;
+    }
+
+    .kio_depr_summary_head {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

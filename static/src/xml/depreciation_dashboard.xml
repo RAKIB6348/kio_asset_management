@@ -55,15 +55,81 @@
                         </article>
 
                         <article class="kio_depr_card kio_depr_summary_card">
-                            <h2>Depreciation Summary</h2>
+                            <div class="kio_depr_summary_head">
+                                <h2>Depreciation Summary</h2>
+                                <div class="kio_depr_summary_actions">
+                                    <button t-if="!state.summaryEditMode" class="kio_depr_summary_edit" type="button" t-on-click="startSummaryEdit"><i class="fa fa-pencil"/> Edit</button>
+                                    <t t-else="">
+                                        <button class="kio_depr_summary_save" type="button" t-on-click="saveSummaryChanges">Save Changes</button>
+                                        <button class="kio_depr_summary_cancel" type="button" t-on-click="cancelSummaryEdit">Cancel</button>
+                                    </t>
+                                </div>
+                            </div>
+                            <div t-if="state.summaryMessage" class="kio_depr_summary_message" t-esc="state.summaryMessage"/>
                             <div class="kio_depr_summary_grid">
-                                <div><span>Depreciation Method</span><strong t-esc="state.data.summary.method"/></div>
-                                <div><span>Useful Life (Years)</span><strong t-esc="state.data.summary.usefulLife"/></div>
-                                <div><span>Depreciation Start Date</span><strong t-esc="state.data.summary.depreciationStartDate"/></div>
-                                <div><span>Residual Value</span><strong t-esc="state.data.summary.residualValue"/></div>
-                                <div><span>Annual Depreciation</span><strong t-esc="state.data.summary.annualDepreciation"/></div>
-                                <div><span>Monthly Depreciation</span><strong t-esc="state.data.summary.monthlyDepreciation"/></div>
-                                <div><span>Depreciable Amount</span><strong t-esc="state.data.summary.depreciableAmount"/></div>
+                                <div>
+                                    <span>Depreciation Method</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <select class="kio_depr_summary_input" t-att-value="state.summaryForm.depreciationMethod" t-on-change="(ev) => this.onSummaryFieldInput('depreciationMethod', ev)">
+                                            <t t-foreach="state.data.methodOptions" t-as="method" t-key="method.value">
+                                                <option t-att-value="method.value" t-esc="method.label"/>
+                                            </t>
+                                        </select>
+                                        <small t-if="state.summaryErrors.depreciationMethod" class="kio_depr_summary_error" t-esc="state.summaryErrors.depreciationMethod"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.method"/>
+                                </div>
+                                <div>
+                                    <span>Useful Life (Years)</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <input class="kio_depr_summary_input" type="number" min="1" step="1" t-att-value="state.summaryForm.usefulLifeYears" t-on-input="(ev) => this.onSummaryFieldInput('usefulLifeYears', ev)"/>
+                                        <small t-if="state.summaryErrors.usefulLifeYears" class="kio_depr_summary_error" t-esc="state.summaryErrors.usefulLifeYears"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.usefulLife"/>
+                                </div>
+                                <div>
+                                    <span>Depreciation Start Date</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <div class="kio_depr_date">
+                                            <input class="kio_depr_summary_input" type="date" t-att-value="state.summaryForm.depreciationStartDate" t-on-change="(ev) => this.onSummaryFieldInput('depreciationStartDate', ev)"/>
+                                            <i class="fa fa-calendar"/>
+                                        </div>
+                                        <small t-if="state.summaryErrors.depreciationStartDate" class="kio_depr_summary_error" t-esc="state.summaryErrors.depreciationStartDate"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.depreciationStartDate"/>
+                                </div>
+                                <div>
+                                    <span>Residual Value</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <input class="kio_depr_summary_input" type="number" min="0" step="0.01" t-att-value="state.summaryForm.residualValue" t-on-input="(ev) => this.onSummaryFieldInput('residualValue', ev)"/>
+                                        <small t-if="state.summaryErrors.residualValue" class="kio_depr_summary_error" t-esc="state.summaryErrors.residualValue"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.residualValue"/>
+                                </div>
+                                <div>
+                                    <span>Annual Depreciation</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <input class="kio_depr_summary_input" type="number" min="0" step="0.01" t-att-value="state.summaryForm.annualDepreciation" t-on-input="(ev) => this.onSummaryFieldInput('annualDepreciation', ev)"/>
+                                        <small t-if="state.summaryErrors.annualDepreciation" class="kio_depr_summary_error" t-esc="state.summaryErrors.annualDepreciation"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.annualDepreciation"/>
+                                </div>
+                                <div>
+                                    <span>Monthly Depreciation</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <input class="kio_depr_summary_input" type="number" min="0" step="0.01" t-att-value="state.summaryForm.monthlyDepreciation" t-on-input="(ev) => this.onSummaryFieldInput('monthlyDepreciation', ev)"/>
+                                        <small t-if="state.summaryErrors.monthlyDepreciation" class="kio_depr_summary_error" t-esc="state.summaryErrors.monthlyDepreciation"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.monthlyDepreciation"/>
+                                </div>
+                                <div>
+                                    <span>Depreciable Amount</span>
+                                    <t t-if="state.summaryEditMode">
+                                        <input class="kio_depr_summary_input" type="number" min="0" step="0.01" t-att-value="state.summaryForm.depreciableAmount" t-on-input="(ev) => this.onSummaryFieldInput('depreciableAmount', ev)"/>
+                                        <small t-if="state.summaryErrors.depreciableAmount" class="kio_depr_summary_error" t-esc="state.summaryErrors.depreciableAmount"/>
+                                    </t>
+                                    <strong t-else="" t-esc="state.data.summary.depreciableAmount"/>
+                                </div>
                                 <div><span>Book Value Today</span><strong t-attf-class="kio_depr_value_#{state.data.summary.bookValueTone}" t-esc="state.data.summary.bookValueToday"/></div>
                             </div>
                             <div class="kio_depr_progress_block">

@@ -25,6 +25,7 @@ class KioAssetUnit(models.Model):
     useful_life_years = fields.Integer(string="Useful Life (Years)", default=3)
     residual_value = fields.Monetary(string="Residual Value", currency_field='currency_id')
     depreciation_start_date = fields.Date(string="Depreciation Start Date")
+    manual_depreciable_amount = fields.Monetary(string="Manual Depreciable Amount", currency_field='currency_id')
     auto_create_journal_entries = fields.Boolean(string="Auto Create Journal Entries", default=False)
     create_journal_frequency = fields.Selection([
         ('monthly', 'Monthly'),
@@ -418,21 +419,23 @@ class KioAssetDashboardService(models.AbstractModel):
         unit = self.env['kio.asset.unit'].sudo().browse(selected['id'])
         product = unit.product_id
         purchase_value = selected.get('unitPrice') or 0.0
-        residual_value = unit.residual_value or 0.0
         useful_life = max(unit.useful_life_years or 0, 1)
         start_date = unit.depreciation_start_date or self._parse_row_date(selected.get('purchaseDate')) or fields.Date.context_today(self)
-        months = useful_life * 12
-        depreciable = max(purchase_value - residual_value, 0.0)
-        monthly_amount = depreciable / months if months else 0.0
-        annual_amount = monthly_amount * 12.0
-        schedule = self._depreciation_schedule(unit, start_date, months, purchase_value, residual_value, monthly_amount)
+        calculation = self._depreciation_values(unit, purchase_value, useful_life)
+        residual_value = calculation['residual_value']
+        months = calculation['months']
+        depreciable = calculation['depreciable_amount']
+        monthly_amount = calculation['monthly_amount']
+        annual_amount = calculation['annual_amount']
+        ending_book_value = calculation['ending_book_value']
+        schedule = self._depreciation_schedule(unit, start_date, months, purchase_value, ending_book_value, monthly_amount)
         posted_rows = [line for line in schedule if line['status'] == 'Posted']
         completed = sum(line['depreciationAmountRaw'] for line in posted_rows)
         if not posted_rows and schedule:
             today = fields.Date.context_today(self)
             completed = sum(line['depreciationAmountRaw'] for line in schedule if line['toDateRaw'] < today)
         completed = min(completed, depreciable)
-        book_today = max(purchase_value - completed, residual_value)
+        book_today = max(purchase_value - completed, ending_book_value)
         progress_percent = (completed / depreciable * 100.0) if depreciable else 0.0
         fiscal_start = date(start_date.year, 1, 1)
         fiscal_end = date(start_date.year, 12, 31)
@@ -475,13 +478,25 @@ class KioAssetDashboardService(models.AbstractModel):
                 'bookValueToday': self._format_money(book_today),
                 'bookValueTone': 'green' if book_today > residual_value else 'orange',
             },
+            'summaryInputs': {
+                'purchasePrice': purchase_value,
+                'depreciationMethod': unit.depreciation_method or 'straight_line',
+                'usefulLifeYears': useful_life,
+                'depreciationStartDate': fields.Date.to_string(start_date),
+                'residualValue': residual_value,
+                'annualDepreciation': annual_amount,
+                'monthlyDepreciation': monthly_amount,
+                'depreciableAmount': depreciable,
+                'maxDepreciableAmount': calculation['max_depreciable_amount'],
+                'endingBookValue': ending_book_value,
+            },
             'progress': {
                 'percent': min(progress_percent, 100.0),
                 'percentText': '%.2f%%' % min(progress_percent, 100.0),
                 'elapsedTime': self._elapsed_depreciation_time(start_date),
                 'completedDepreciation': self._format_money(completed),
                 'remainingDepreciation': self._format_money(max(depreciable - completed, 0.0)),
-                'endingBookValue': self._format_money(residual_value),
+                'endingBookValue': self._format_money(ending_book_value),
             },
             'scheduleRows': schedule,
             'totals': {
@@ -505,6 +520,82 @@ class KioAssetDashboardService(models.AbstractModel):
             },
             'emptyMessage': '',
         }
+
+    @api.model
+    def update_depreciation_summary(self, asset_id, values):
+        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        if not unit.exists():
+            return {'success': False, 'errors': {'asset': 'The selected asset no longer exists.'}}
+
+        values = values or {}
+        row = self._select_asset_row(self._current_asset_rows(), unit.id)
+        purchase_value = row.get('unitPrice') if row else 0.0
+        errors = {}
+
+        useful_life = self._parse_positive_int(values.get('usefulLifeYears'))
+        if useful_life is False or useful_life <= 0:
+            errors['usefulLifeYears'] = 'Useful Life must be greater than 0.'
+
+        depreciation_start_date = values.get('depreciationStartDate')
+        start_date = self._parse_row_date(depreciation_start_date)
+        if not start_date:
+            errors['depreciationStartDate'] = 'Depreciation Start Date is required.'
+
+        residual_value = self._parse_non_negative_float(values.get('residualValue'))
+        if residual_value is False:
+            errors['residualValue'] = 'Residual Value is required.'
+        elif residual_value > purchase_value:
+            errors['residualValue'] = 'Residual Value cannot be greater than Purchase Price.'
+
+        numeric_fields = ('annualDepreciation', 'monthlyDepreciation', 'depreciableAmount')
+        numeric_values = {}
+        for field_name in numeric_fields:
+            parsed_value = self._parse_non_negative_float(values.get(field_name))
+            if parsed_value is False:
+                errors[field_name] = 'A valid numeric value is required.'
+            else:
+                numeric_values[field_name] = parsed_value
+
+        method = values.get('depreciationMethod') or 'straight_line'
+        valid_methods = dict(self.env['kio.asset.unit']._fields['depreciation_method'].selection)
+        if method not in valid_methods:
+            errors['depreciationMethod'] = 'Select a valid Depreciation Method.'
+
+        if errors:
+            return {'success': False, 'errors': errors}
+
+        months = useful_life * 12
+        max_depreciable = max(purchase_value - residual_value, 0.0)
+        driver = values.get('driverField') or 'depreciableAmount'
+        if driver == 'monthlyDepreciation':
+            depreciable_amount = numeric_values['monthlyDepreciation'] * months
+        elif driver == 'annualDepreciation':
+            depreciable_amount = numeric_values['annualDepreciation'] * useful_life
+        else:
+            depreciable_amount = numeric_values['depreciableAmount']
+
+        if depreciable_amount > max_depreciable + 1e-9:
+            errors['depreciableAmount'] = 'Depreciable Amount cannot exceed Purchase Price minus Residual Value.'
+        if numeric_values['monthlyDepreciation'] > max_depreciable + 1e-9:
+            errors['monthlyDepreciation'] = 'Monthly Depreciation is too high for the selected residual value.'
+        if numeric_values['annualDepreciation'] > max_depreciable + 1e-9:
+            errors['annualDepreciation'] = 'Annual Depreciation is too high for the selected residual value.'
+
+        if errors:
+            return {'success': False, 'errors': errors}
+
+        unit.write({
+            'depreciation_method': method,
+            'useful_life_years': useful_life,
+            'depreciation_start_date': start_date,
+            'residual_value': residual_value,
+            'manual_depreciable_amount': depreciable_amount,
+        })
+
+        data = self.get_depreciation_dashboard_data(unit.id)
+        data['success'] = True
+        data['message'] = 'Depreciation Summary updated successfully.'
+        return data
 
     def _current_asset_rows(self):
         products = self._get_asset_products()
@@ -541,7 +632,29 @@ class KioAssetDashboardService(models.AbstractModel):
         except Exception:
             return False
 
-    def _depreciation_schedule(self, unit, start_date, months, purchase_value, residual_value, monthly_amount):
+    def _depreciation_values(self, unit, purchase_value, useful_life):
+        residual_value = unit.residual_value or 0.0
+        months = max(useful_life, 1) * 12
+        max_depreciable_amount = max(purchase_value - residual_value, 0.0)
+        manual_depreciable = unit.manual_depreciable_amount
+        if manual_depreciable is False or manual_depreciable is None:
+            depreciable_amount = max_depreciable_amount
+        else:
+            depreciable_amount = min(max(manual_depreciable, 0.0), max_depreciable_amount)
+        monthly_amount = depreciable_amount / months if months else 0.0
+        annual_amount = monthly_amount * 12.0
+        ending_book_value = max(purchase_value - depreciable_amount, 0.0)
+        return {
+            'residual_value': residual_value,
+            'months': months,
+            'max_depreciable_amount': max_depreciable_amount,
+            'depreciable_amount': depreciable_amount,
+            'monthly_amount': monthly_amount,
+            'annual_amount': annual_amount,
+            'ending_book_value': ending_book_value,
+        }
+
+    def _depreciation_schedule(self, unit, start_date, months, purchase_value, ending_book_value, monthly_amount):
         moves = self._asset_depreciation_moves(unit)
         move_by_period = {fields.Date.to_string(move.date.replace(day=1)): move for move in moves if move.date}
         rows = []
@@ -551,9 +664,9 @@ class KioAssetDashboardService(models.AbstractModel):
             period_start = start_date + relativedelta(months=index)
             last_day = calendar.monthrange(period_start.year, period_start.month)[1]
             period_end = period_start.replace(day=last_day)
-            amount = min(monthly_amount, max(opening - residual_value, 0.0))
+            amount = min(monthly_amount, max(opening - ending_book_value, 0.0))
             accumulated += amount
-            closing = max(opening - amount, residual_value)
+            closing = max(opening - amount, ending_book_value)
             move = move_by_period.get(fields.Date.to_string(period_start.replace(day=1)))
             status = 'Posted' if move and move.state == 'posted' else ('Draft' if move else 'To Post')
             rows.append({
@@ -619,6 +732,21 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _percent_value(self, value, total):
         return '0.00%' if not total else '%.2f%%' % ((value / total) * 100.0)
+
+    def _parse_positive_int(self, value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return False
+
+    def _parse_non_negative_float(self, value):
+        try:
+            parsed = float(value)
+        except (TypeError, ValueError):
+            return False
+        if parsed < 0:
+            return False
+        return parsed
 
     def _icon_for_category(self, category_name):
         name = (category_name or '').lower()

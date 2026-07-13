@@ -46,6 +46,7 @@
                     </t>
                 </section>
 
+                <!--
                 <section class="kio_action_row" aria-label="Quick actions">
                     <t t-foreach="actions" t-as="action" t-key="action.label">
                         <button t-attf-class="kio_action_btn kio_action_#{action.tone}" type="button" t-on-click="() => this.handleQuickAction(action)">
@@ -54,6 +55,7 @@
                         </button>
                     </t>
                 </section>
+                -->
 
                 <section class="kio_dashboard_grid">
                     <article class="kio_panel">

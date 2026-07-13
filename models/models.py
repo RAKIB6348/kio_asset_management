@@ -685,32 +685,17 @@ class KioAssetDashboardService(models.AbstractModel):
             return {'success': False, 'message': 'The selected asset no longer exists.'}
 
         values = values or {}
-        journal_id = int(values.get('depreciationJournalId') or 0)
         expense_account_id = int(values.get('depreciationExpenseAccountId') or 0)
-        accumulated_account_id = int(values.get('accumulatedDepreciationAccountId') or 0)
-        frequency = values.get('createJournal')
-        valid_frequencies = dict(self.env['kio.asset.unit']._fields['create_journal_frequency'].selection)
-        validation_message = 'Please configure the Depreciation Journal, Depreciation Expense Account, Accumulated Depreciation Account, and Journal Creation Frequency.'
-        if not journal_id or not expense_account_id or not accumulated_account_id or frequency not in valid_frequencies:
+        validation_message = 'Please select the Depreciation Expense Account.'
+        if not expense_account_id:
             return {'success': False, 'message': validation_message}
 
         company = unit.company_id or self.env.company
-        journal = self._depreciation_journal_options(company).filtered(lambda item: item.id == journal_id)[:1]
         expense_account = self._depreciation_expense_account_options(company).filtered(lambda item: item.id == expense_account_id)[:1]
-        accumulated_account = self._accumulated_depreciation_account_options(company).filtered(lambda item: item.id == accumulated_account_id)[:1]
-        if not journal or not expense_account or not accumulated_account:
+        if not expense_account:
             return {'success': False, 'message': validation_message}
 
-        next_run_date = self._parse_row_date(values.get('nextRunDate'))
-        unit.write({
-            'depreciation_journal_id': journal.id,
-            'depreciation_expense_account_id': expense_account.id,
-            'accumulated_depreciation_account_id': accumulated_account.id,
-            'create_journal_frequency': frequency,
-            'auto_create_journal_entries': bool(values.get('autoCreate')),
-            'next_depreciation_run_date': next_run_date or False,
-            'post_due_entries_automatically': bool(values.get('postDueEntriesAutomatically')),
-        })
+        unit.write({'depreciation_expense_account_id': expense_account.id})
 
         data = self.get_depreciation_dashboard_data(unit.id)
         data['success'] = True

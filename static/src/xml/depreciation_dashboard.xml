@@ -190,6 +190,7 @@
                     </header>
                     <div class="kio_depr_modal_body">
                         <div t-if="state.configError" class="kio_depr_config_error" role="alert" t-esc="state.configError"/>
+<!--
                         <label>
                             <span>Depreciation Journal <b>*</b></span>
                             <select t-att-value="state.configForm.depreciationJournalId" t-on-change="(ev) => this.onConfigFieldChange('depreciationJournalId', ev)">
@@ -199,6 +200,7 @@
                                 </t>
                             </select>
                         </label>
+                        -->
                         <label>
                             <span>Depreciation Expense Account <b>*</b></span>
                             <select t-att-value="state.configForm.depreciationExpenseAccountId" t-on-change="(ev) => this.onConfigFieldChange('depreciationExpenseAccountId', ev)">
@@ -208,6 +210,7 @@
                                 </t>
                             </select>
                         </label>
+<!--
                         <label>
                             <span>Accumulated Depreciation Account <b>*</b></span>
                             <select t-att-value="state.configForm.accumulatedDepreciationAccountId" t-on-change="(ev) => this.onConfigFieldChange('accumulatedDepreciationAccountId', ev)">
@@ -242,6 +245,7 @@
                             <input type="checkbox" t-att-checked="state.configForm.postDueEntriesAutomatically" t-on-change="(ev) => this.onConfigBooleanChange('postDueEntriesAutomatically', ev)"/>
                             <em/>
                         </label>
+                        -->
                     </div>
                     <footer class="kio_depr_modal_footer">
                         <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-att-disabled="state.configSaving" t-on-click="closeConfigurationModal">Cancel</button>

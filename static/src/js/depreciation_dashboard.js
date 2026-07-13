@@ -242,12 +242,11 @@ export class DepreciationDashboard extends Component {
     }
 
     validateConfigForm() {
-        const form = this.state.configForm;
-        return Boolean(form.depreciationJournalId && form.depreciationExpenseAccountId && form.accumulatedDepreciationAccountId && form.createJournal);
+        return Boolean(this.state.configForm.depreciationExpenseAccountId);
     }
 
     async saveConfiguration() {
-        const validationMessage = "Please configure the Depreciation Journal, Depreciation Expense Account, Accumulated Depreciation Account, and Journal Creation Frequency.";
+        const validationMessage = "Please select the Depreciation Expense Account.";
         if (!this.validateConfigForm()) {
             this.state.configError = validationMessage;
             return;
@@ -257,13 +256,7 @@ export class DepreciationDashboard extends Component {
         try {
             const form = this.state.configForm;
             const result = await this.orm.call("kio.asset.dashboard.service", "update_depreciation_configuration", [this.state.selectedAssetId || false, {
-                depreciationJournalId: Number(form.depreciationJournalId) || false,
                 depreciationExpenseAccountId: Number(form.depreciationExpenseAccountId) || false,
-                accumulatedDepreciationAccountId: Number(form.accumulatedDepreciationAccountId) || false,
-                createJournal: form.createJournal || false,
-                autoCreate: Boolean(form.autoCreate),
-                nextRunDate: form.nextRunDate || false,
-                postDueEntriesAutomatically: Boolean(form.postDueEntriesAutomatically),
             }]);
             if (!result || !result.success) {
                 this.state.configError = (result && result.message) || validationMessage;

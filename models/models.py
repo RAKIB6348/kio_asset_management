@@ -995,18 +995,10 @@ class KioAssetDashboardService(models.AbstractModel):
         return account
 
     def _depreciation_expense_account(self, unit):
-        if unit.depreciation_expense_account_id:
-            return unit.depreciation_expense_account_id
-        company = unit.company_id or self.env.company
-        account = self.env['account.account'].sudo().search([
-            ('company_id', '=', company.id),
-            ('name', '=', 'Expenses'),
-            ('account_type', '=', 'expense'),
-            ('deprecated', '=', False),
-        ], order='id asc', limit=1)
-        if account:
+        account = unit.depreciation_expense_account_id
+        if account and not account.deprecated:
             return account
-        raise ValidationError('No default Expenses account was found in the Chart of Accounts.')
+        raise ValidationError('Please select the Depreciation Expense Account in Configuration before generating depreciation entries.')
 
     def _accumulated_depreciation_account(self, journal, unit):
         return unit.accumulated_depreciation_account_id or journal.default_account_id

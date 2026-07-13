@@ -19,6 +19,7 @@
                 <div class="kio_depr_actions">
                     <button class="kio_depr_btn kio_depr_btn_green" type="button" t-on-click="runDepreciation">Run Depreciation</button>
                     <button class="kio_depr_btn kio_depr_btn_blue" type="button" t-on-click="createJournalEntries">Create Journal Entries</button>
+                    <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="openConfigurationModal">Configuration</button>
                     <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="moreActions">More Actions <i class="fa fa-angle-down"/></button>
                 </div>
             </header>
@@ -180,6 +181,74 @@
                     </section>
                 </t>
             </main>
+
+            <t t-if="state.configModalOpen">
+                <div class="kio_depr_modal_backdrop" aria-hidden="true"/>
+                <section class="kio_depr_modal" role="dialog" aria-modal="true" aria-labelledby="kio_depr_config_title">
+                    <header class="kio_depr_modal_header">
+                        <h2 id="kio_depr_config_title">Configuration</h2>
+                    </header>
+                    <div class="kio_depr_modal_body">
+                        <div t-if="state.configError" class="kio_depr_config_error" role="alert" t-esc="state.configError"/>
+                        <label>
+                            <span>Depreciation Journal <b>*</b></span>
+                            <select t-att-value="state.configForm.depreciationJournalId" t-on-change="(ev) => this.onConfigFieldChange('depreciationJournalId', ev)">
+                                <option value="">Select Journal</option>
+                                <t t-foreach="state.data.journalOptions" t-as="journal" t-key="journal.id">
+                                    <option t-att-value="journal.id" t-att-selected="journal.id == state.configForm.depreciationJournalId" t-esc="journal.name"/>
+                                </t>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Depreciation Expense Account <b>*</b></span>
+                            <select t-att-value="state.configForm.depreciationExpenseAccountId" t-on-change="(ev) => this.onConfigFieldChange('depreciationExpenseAccountId', ev)">
+                                <option value="">Select Account</option>
+                                <t t-foreach="state.data.expenseAccountOptions" t-as="account" t-key="account.id">
+                                    <option t-att-value="account.id" t-att-selected="account.id == state.configForm.depreciationExpenseAccountId" t-esc="account.name"/>
+                                </t>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Accumulated Depreciation Account <b>*</b></span>
+                            <select t-att-value="state.configForm.accumulatedDepreciationAccountId" t-on-change="(ev) => this.onConfigFieldChange('accumulatedDepreciationAccountId', ev)">
+                                <option value="">Select Account</option>
+                                <t t-foreach="state.data.accumulatedAccountOptions" t-as="account" t-key="account.id">
+                                    <option t-att-value="account.id" t-att-selected="account.id == state.configForm.accumulatedDepreciationAccountId" t-esc="account.name"/>
+                                </t>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Journal Creation Frequency <b>*</b></span>
+                            <select t-att-value="state.configForm.createJournal" t-on-change="(ev) => this.onConfigFieldChange('createJournal', ev)">
+                                <option value="monthly">Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </label>
+                        <label class="kio_depr_modal_toggle">
+                            <span>Auto Create Journal Entries</span>
+                            <input type="checkbox" t-att-checked="state.configForm.autoCreate" t-on-change="(ev) => this.onConfigBooleanChange('autoCreate', ev)"/>
+                            <em/>
+                        </label>
+                        <label>
+                            <span>Next Run Date</span>
+                            <div class="kio_depr_date">
+                                <input type="date" t-att-value="state.configForm.nextRunDate" t-on-click="openDepreciationDatePicker" t-on-input="(ev) => this.onConfigFieldChange('nextRunDate', ev)" t-on-change="(ev) => this.onConfigFieldChange('nextRunDate', ev)"/>
+                                <i class="fa fa-calendar" t-on-click="openDepreciationDatePicker"/>
+                            </div>
+                        </label>
+                        <label class="kio_depr_modal_toggle">
+                            <span>Post Due Entries Automatically</span>
+                            <input type="checkbox" t-att-checked="state.configForm.postDueEntriesAutomatically" t-on-change="(ev) => this.onConfigBooleanChange('postDueEntriesAutomatically', ev)"/>
+                            <em/>
+                        </label>
+                    </div>
+                    <footer class="kio_depr_modal_footer">
+                        <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-att-disabled="state.configSaving" t-on-click="closeConfigurationModal">Cancel</button>
+                        <button class="kio_depr_btn kio_depr_btn_blue" type="button" t-att-disabled="state.configSaving" t-on-click="saveConfiguration">Save Configuration</button>
+                    </footer>
+                </section>
+            </t>
         </div>
     </t>
 </templates>

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, useExternalListener, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -10,6 +10,7 @@ export class DepreciationDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
+        this.notification = useService("notification");
         const context = (this.props.action && this.props.action.context) || {};
         const sourceAssetId = context.active_asset_id || context.asset_id || context.depreciation_asset_id || false;
         this.state = useState({
@@ -23,8 +24,13 @@ export class DepreciationDashboard extends Component {
             summaryErrors: {},
             summaryDriverField: "depreciableAmount",
             summaryMessage: "",
+            configModalOpen: false,
+            configForm: this.emptyConfigForm(),
+            configError: "",
+            configSaving: false,
         });
         onWillStart(async () => this.loadData(this.state.selectedAssetId));
+        useExternalListener(window, "keydown", (event) => this.onWindowKeydown(event));
     }
 
     emptyData() {
@@ -33,6 +39,8 @@ export class DepreciationDashboard extends Component {
             methodOptions: [],
             fiscalYearOptions: [],
             journalOptions: [],
+            expenseAccountOptions: [],
+            accumulatedAccountOptions: [],
             filters: {},
             assetInfo: {},
             summary: {},
@@ -41,6 +49,7 @@ export class DepreciationDashboard extends Component {
             scheduleRows: [],
             totals: {},
             automation: {},
+            configuration: {},
             preview: {},
             emptyMessage: "",
         };
@@ -55,6 +64,18 @@ export class DepreciationDashboard extends Component {
             annualDepreciation: "",
             monthlyDepreciation: "",
             depreciableAmount: "",
+        };
+    }
+
+    emptyConfigForm() {
+        return {
+            depreciationJournalId: "",
+            depreciationExpenseAccountId: "",
+            accumulatedDepreciationAccountId: "",
+            createJournal: "monthly",
+            autoCreate: false,
+            nextRunDate: "",
+            postDueEntriesAutomatically: true,
         };
     }
 
@@ -77,6 +98,7 @@ export class DepreciationDashboard extends Component {
             this.state.data.assetOptions = (this.state.data.assetOptions || []).filter((asset) => asset.id === this.state.lockedAssetId);
         }
         this.resetSummaryForm();
+        this.resetConfigForm();
         this.state.summaryEditMode = false;
         this.state.summaryErrors = {};
         if (!options.keepMessage) {
@@ -119,6 +141,12 @@ export class DepreciationDashboard extends Component {
         }
     }
 
+    onWindowKeydown(event) {
+        if (event.key === "Escape" && this.state.configModalOpen && !this.state.configSaving) {
+            this.closeConfigurationModal();
+        }
+    }
+
     onFromDateChange(event) {
         this.state.data.filters.fromDate = event.target.value;
     }
@@ -151,6 +179,7 @@ export class DepreciationDashboard extends Component {
         const result = await this.orm.call("kio.asset.dashboard.service", "update_depreciation_automation", [this.state.selectedAssetId || false, {
             autoCreate: automation.autoCreate,
             createJournal: automation.createJournal,
+            nextRunDate: automation.nextRunDate || false,
             journalId: automation.journalId || false,
         }]);
         this.applyDashboardResult(result);
@@ -168,10 +197,88 @@ export class DepreciationDashboard extends Component {
                 this.state.data.assetOptions = (this.state.data.assetOptions || []).filter((asset) => asset.id === this.state.lockedAssetId);
             }
             this.resetSummaryForm();
+            this.resetConfigForm();
             this.state.summaryEditMode = false;
             this.state.summaryErrors = {};
         }
         this.state.summaryMessage = result.message || fallbackMessage || "";
+    }
+
+    resetConfigForm() {
+        const config = (this.state.data && this.state.data.configuration) || {};
+        this.state.configForm = {
+            depreciationJournalId: config.depreciationJournalId ? String(config.depreciationJournalId) : "",
+            depreciationExpenseAccountId: config.depreciationExpenseAccountId ? String(config.depreciationExpenseAccountId) : "",
+            accumulatedDepreciationAccountId: config.accumulatedDepreciationAccountId ? String(config.accumulatedDepreciationAccountId) : "",
+            createJournal: config.createJournal || "monthly",
+            autoCreate: Boolean(config.autoCreate),
+            nextRunDate: config.nextRunDate || "",
+            postDueEntriesAutomatically: config.postDueEntriesAutomatically !== false,
+        };
+        this.state.configError = "";
+    }
+
+    openConfigurationModal() {
+        this.resetConfigForm();
+        this.state.configModalOpen = true;
+    }
+
+    closeConfigurationModal() {
+        if (this.state.configSaving) {
+            return;
+        }
+        this.state.configModalOpen = false;
+        this.state.configError = "";
+    }
+
+    onConfigFieldChange(fieldName, event) {
+        this.state.configError = "";
+        this.state.configForm[fieldName] = event.target.value || "";
+    }
+
+    onConfigBooleanChange(fieldName, event) {
+        this.state.configError = "";
+        this.state.configForm[fieldName] = Boolean(event.target.checked);
+    }
+
+    validateConfigForm() {
+        const form = this.state.configForm;
+        return Boolean(form.depreciationJournalId && form.depreciationExpenseAccountId && form.accumulatedDepreciationAccountId && form.createJournal);
+    }
+
+    async saveConfiguration() {
+        const validationMessage = "Please configure the Depreciation Journal, Depreciation Expense Account, Accumulated Depreciation Account, and Journal Creation Frequency.";
+        if (!this.validateConfigForm()) {
+            this.state.configError = validationMessage;
+            return;
+        }
+        this.state.configSaving = true;
+        this.state.configError = "";
+        try {
+            const form = this.state.configForm;
+            const result = await this.orm.call("kio.asset.dashboard.service", "update_depreciation_configuration", [this.state.selectedAssetId || false, {
+                depreciationJournalId: Number(form.depreciationJournalId) || false,
+                depreciationExpenseAccountId: Number(form.depreciationExpenseAccountId) || false,
+                accumulatedDepreciationAccountId: Number(form.accumulatedDepreciationAccountId) || false,
+                createJournal: form.createJournal || false,
+                autoCreate: Boolean(form.autoCreate),
+                nextRunDate: form.nextRunDate || false,
+                postDueEntriesAutomatically: Boolean(form.postDueEntriesAutomatically),
+            }]);
+            if (!result || !result.success) {
+                this.state.configError = (result && result.message) || validationMessage;
+                return;
+            }
+            this.applyDashboardResult(result, result.message || "Depreciation configuration saved successfully.");
+            this.resetConfigForm();
+            this.state.configModalOpen = false;
+            this.notification.add(result.message || "Depreciation configuration saved successfully.", { type: "success" });
+        } catch (error) {
+            console.error("Could not save depreciation configuration", error);
+            this.state.configError = (error && error.data && error.data.message) || (error && error.message) || validationMessage;
+        } finally {
+            this.state.configSaving = false;
+        }
     }
 
     resetSummaryForm() {

@@ -54,6 +54,8 @@ class KioAssetUnit(models.Model):
     depreciation_start_date = fields.Date(string="Depreciation Start Date")
     manual_depreciable_amount = fields.Monetary(string="Manual Depreciable Amount", currency_field='currency_id')
     auto_create_journal_entries = fields.Boolean(string="Auto Create Journal Entries", default=False)
+    next_depreciation_run_date = fields.Date(string="Next Run Date")
+    post_due_entries_automatically = fields.Boolean(string="Post Due Entries Automatically", default=True)
     create_journal_frequency = fields.Selection([
         ('monthly', 'Monthly'),
         ('quarterly', 'Quarterly'),
@@ -482,13 +484,18 @@ class KioAssetDashboardService(models.AbstractModel):
     def get_depreciation_dashboard_data(self, asset_id=False):
         rows = self._current_asset_rows()
         selected = self._select_asset_row(rows, asset_id)
-        journals = self.env['account.journal'].sudo().search([('type', '=', 'general')], order='name asc')
+        company = self.env.company
+        journals = self._depreciation_journal_options(company)
+        expense_accounts = self._depreciation_expense_account_options(company)
+        accumulated_accounts = self._accumulated_depreciation_account_options(company)
         if not selected:
             return {
                 'assetOptions': [],
                 'methodOptions': self._depreciation_method_options(),
                 'fiscalYearOptions': self._fiscal_year_options(),
                 'journalOptions': [{'id': journal.id, 'name': journal.display_name} for journal in journals],
+                'expenseAccountOptions': [{'id': account.id, 'name': account.display_name} for account in expense_accounts],
+                'accumulatedAccountOptions': [{'id': account.id, 'name': account.display_name} for account in accumulated_accounts],
                 'selectedAssetId': False,
                 'filters': {},
                 'assetInfo': {},
@@ -525,12 +532,15 @@ class KioAssetDashboardService(models.AbstractModel):
         fiscal_end = date(start_date.year, 12, 31)
         next_line = next((line for line in schedule if line['status'] != 'Posted'), schedule[-1] if schedule else {})
         selected_journal = unit.depreciation_journal_id or (journals[:1] if journals else self.env['account.journal'])
+        next_run_date = unit.next_depreciation_run_date or (next_line.get('fromDateRaw') if next_line else start_date) or start_date
 
         return {
             'assetOptions': [{'id': row['id'], 'label': '%s (%s)' % (row['name'], row['code'])} for row in rows],
             'methodOptions': self._depreciation_method_options(),
             'fiscalYearOptions': self._fiscal_year_options(start_date),
             'journalOptions': [{'id': journal.id, 'name': journal.display_name} for journal in journals],
+            'expenseAccountOptions': [{'id': account.id, 'name': account.display_name} for account in expense_accounts],
+            'accumulatedAccountOptions': [{'id': account.id, 'name': account.display_name} for account in accumulated_accounts],
             'selectedAssetId': unit.id,
             'filters': {
                 'assetId': unit.id,
@@ -592,9 +602,18 @@ class KioAssetDashboardService(models.AbstractModel):
             'automation': {
                 'autoCreate': bool(unit.auto_create_journal_entries),
                 'createJournal': unit.create_journal_frequency or 'monthly',
-                'nextRunDate': next_line.get('fromDateRaw') and fields.Date.to_string(next_line['fromDateRaw']) or fields.Date.to_string(start_date),
+                'nextRunDate': fields.Date.to_string(next_run_date),
                 'journalId': selected_journal.id if selected_journal else False,
                 'journalName': selected_journal.display_name if selected_journal else '-',
+            },
+            'configuration': {
+                'depreciationJournalId': unit.depreciation_journal_id.id or False,
+                'depreciationExpenseAccountId': unit.depreciation_expense_account_id.id or False,
+                'accumulatedDepreciationAccountId': unit.accumulated_depreciation_account_id.id or False,
+                'createJournal': unit.create_journal_frequency or 'monthly',
+                'autoCreate': bool(unit.auto_create_journal_entries),
+                'nextRunDate': fields.Date.to_string(next_run_date),
+                'postDueEntriesAutomatically': bool(unit.post_due_entries_automatically),
             },
             'preview': {
                 'nextRunDate': next_line.get('fromDate') or '-',
@@ -639,6 +658,65 @@ class KioAssetDashboardService(models.AbstractModel):
         data['message'] = self._depreciation_generation_message(result)
         return data
 
+    def _depreciation_journal_options(self, company):
+        return self.env['account.journal'].sudo().search([
+            ('type', '=', 'general'),
+            ('company_id', 'in', [company.id, False]),
+        ], order='company_id desc, name asc')
+
+    def _depreciation_expense_account_options(self, company):
+        return self.env['account.account'].sudo().search([
+            ('company_id', '=', company.id),
+            ('deprecated', '=', False),
+            ('account_type', 'in', ['expense', 'expense_depreciation']),
+        ], order='code asc, name asc')
+
+    def _accumulated_depreciation_account_options(self, company):
+        return self.env['account.account'].sudo().search([
+            ('company_id', '=', company.id),
+            ('deprecated', '=', False),
+            ('account_type', 'in', ['asset_fixed', 'asset_non_current', 'asset_current']),
+        ], order='code asc, name asc')
+
+    @api.model
+    def update_depreciation_configuration(self, asset_id, values):
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
+        if not unit.exists():
+            return {'success': False, 'message': 'The selected asset no longer exists.'}
+
+        values = values or {}
+        journal_id = int(values.get('depreciationJournalId') or 0)
+        expense_account_id = int(values.get('depreciationExpenseAccountId') or 0)
+        accumulated_account_id = int(values.get('accumulatedDepreciationAccountId') or 0)
+        frequency = values.get('createJournal')
+        valid_frequencies = dict(self.env['kio.asset.unit']._fields['create_journal_frequency'].selection)
+        validation_message = 'Please configure the Depreciation Journal, Depreciation Expense Account, Accumulated Depreciation Account, and Journal Creation Frequency.'
+        if not journal_id or not expense_account_id or not accumulated_account_id or frequency not in valid_frequencies:
+            return {'success': False, 'message': validation_message}
+
+        company = unit.company_id or self.env.company
+        journal = self._depreciation_journal_options(company).filtered(lambda item: item.id == journal_id)[:1]
+        expense_account = self._depreciation_expense_account_options(company).filtered(lambda item: item.id == expense_account_id)[:1]
+        accumulated_account = self._accumulated_depreciation_account_options(company).filtered(lambda item: item.id == accumulated_account_id)[:1]
+        if not journal or not expense_account or not accumulated_account:
+            return {'success': False, 'message': validation_message}
+
+        next_run_date = self._parse_row_date(values.get('nextRunDate'))
+        unit.write({
+            'depreciation_journal_id': journal.id,
+            'depreciation_expense_account_id': expense_account.id,
+            'accumulated_depreciation_account_id': accumulated_account.id,
+            'create_journal_frequency': frequency,
+            'auto_create_journal_entries': bool(values.get('autoCreate')),
+            'next_depreciation_run_date': next_run_date or False,
+            'post_due_entries_automatically': bool(values.get('postDueEntriesAutomatically')),
+        })
+
+        data = self.get_depreciation_dashboard_data(unit.id)
+        data['success'] = True
+        data['message'] = 'Depreciation configuration saved successfully.'
+        return data
+
     @api.model
     def update_depreciation_automation(self, asset_id, values):
         unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
@@ -651,6 +729,8 @@ class KioAssetDashboardService(models.AbstractModel):
             write_vals['auto_create_journal_entries'] = bool(values.get('autoCreate'))
         if values.get('createJournal') in dict(self.env['kio.asset.unit']._fields['create_journal_frequency'].selection):
             write_vals['create_journal_frequency'] = values.get('createJournal')
+        if 'nextRunDate' in values:
+            write_vals['next_depreciation_run_date'] = self._parse_row_date(values.get('nextRunDate')) or False
         if 'journalId' in values:
             journal_id = int(values.get('journalId') or 0)
             journal = self.env['account.journal'].sudo().browse(journal_id)

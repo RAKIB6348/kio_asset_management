@@ -65,7 +65,7 @@
                         <div class="kio_status_wrap">
                             <div class="kio_donut_chart" aria-label="Asset status donut chart">
                                 <div>
-                                    <strong>1,248</strong>
+                                    <strong t-esc="dashboardTotalAssets"/>
                                     <span>Total</span>
                                 </div>
                             </div>
@@ -88,20 +88,19 @@
                         </div>
                         <div class="kio_bar_chart">
                             <div class="kio_y_axis">
-                                <span>400</span>
-                                <span>300</span>
-                                <span>200</span>
-                                <span>100</span>
-                                <span>0</span>
+                                <t t-foreach="locationAxisLabels" t-as="label" t-key="label_index">
+                                    <span t-esc="label"/>
+                                </t>
                             </div>
                             <div class="kio_bars">
-                                <t t-foreach="locations" t-as="location" t-key="location.label">
+                                <t t-if="locations.length" t-foreach="locations" t-as="location" t-key="location.label">
                                     <div class="kio_bar_item">
                                         <strong t-esc="location.value"/>
-                                        <span t-attf-class="kio_bar kio_bar_#{location.tone}" t-att-style="'height:' + ((location.value / 420) * 78 + 8) + '%'"/>
+                                        <span t-attf-class="kio_bar kio_bar_#{location.tone}" t-att-style="'height:' + ((location.value / maxLocationValue) * 78 + 8) + '%'"/>
                                         <small t-esc="location.label"/>
                                     </div>
                                 </t>
+                                <span t-if="!locations.length">No data available</span>
                             </div>
                         </div>
                     </article>
@@ -112,13 +111,14 @@
                             <button type="button">View all</button>
                         </div>
                         <div class="kio_count_list">
-                            <t t-foreach="maintenanceCounts" t-as="item" t-key="item.label">
+                            <t t-if="maintenanceCounts.length" t-foreach="maintenanceCounts" t-as="item" t-key="item.label">
                                 <div class="kio_count_item">
                                     <span t-attf-class="kio_dot kio_dot_#{item.tone}"/>
                                     <span t-esc="item.label"/>
                                     <strong t-esc="item.value"/>
                                 </div>
                             </t>
+                            <div t-if="!maintenanceCounts.length" class="kio_count_item"><span>No data available</span><strong>0</strong></div>
                         </div>
                     </article>
 
@@ -133,7 +133,7 @@
                                     <tr><th>Asset</th><th>Assigned To</th><th>Department</th><th>Assign Date</th><th>Status</th></tr>
                                 </thead>
                                 <tbody>
-                                    <t t-foreach="assignedAssets" t-as="row" t-key="row.code">
+                                    <t t-if="assignedAssets.length" t-foreach="assignedAssets" t-as="row" t-key="row.code">
                                         <tr>
                                             <td><strong t-esc="row.asset"/><span t-esc="row.code"/></td>
                                             <td t-esc="row.assignedTo"/>
@@ -142,6 +142,7 @@
                                             <td><span class="kio_pill kio_pill_green" t-esc="row.status"/></td>
                                         </tr>
                                     </t>
+                                    <tr t-if="!assignedAssets.length"><td colspan="5">No data available</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -158,7 +159,7 @@
                                     <tr><th>Request</th><th>Asset</th><th>Requested By</th><th>Status</th></tr>
                                 </thead>
                                 <tbody>
-                                    <t t-foreach="maintenanceRequests" t-as="row" t-key="row.request">
+                                    <t t-if="maintenanceRequests.length" t-foreach="maintenanceRequests" t-as="row" t-key="row.request">
                                         <tr>
                                             <td><strong t-esc="row.request"/><span t-esc="row.date"/></td>
                                             <td><strong t-esc="row.asset"/><span t-esc="row.code"/></td>
@@ -166,6 +167,7 @@
                                             <td><span t-attf-class="kio_pill kio_pill_#{row.tone}" t-esc="row.status"/></td>
                                         </tr>
                                     </t>
+                                    <tr t-if="!maintenanceRequests.length"><td colspan="4">No data available</td></tr>
                                 </tbody>
                             </table>
                         </div>

@@ -101,7 +101,7 @@
                                 <table class="kio_details_table">
                                     <thead><tr><th>Request No</th><th>Request Date</th><th>Issue</th><th>Status</th><th>Priority</th><th>Next Maintenance</th><th>Actions</th></tr></thead>
                                     <tbody>
-                                        <t t-foreach="selectedAsset.maintenanceRows" t-as="row" t-key="row.requestNo">
+                                        <t t-if="selectedAsset.maintenanceRows.length" t-foreach="selectedAsset.maintenanceRows" t-as="row" t-key="row.requestNo">
                                             <tr>
                                                 <td><a href="#" t-esc="row.requestNo"/></td>
                                                 <td t-esc="row.requestDate"/>
@@ -112,6 +112,7 @@
                                                 <td><button class="kio_row_view" type="button"><i class="fa fa-eye"/></button></td>
                                             </tr>
                                         </t>
+                                        <tr t-if="!selectedAsset.maintenanceRows.length"><td colspan="7">No data available</td></tr>
                                     </tbody>
                                 </table>
                             </div>

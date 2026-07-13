@@ -150,7 +150,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'category': product.categ_id.display_name or '',
             'brand': product.product_tmpl_id.x_studio_brand_model if 'x_studio_brand_model' in product.product_tmpl_id._fields else (product.product_tmpl_id.description_sale or product.display_name),
             'serial': product.barcode or '-',
-            'location': 'Head Office',
+            'location': '-',
             'locationMeta': '',
             'assignedTo': '-',
             'assignedMeta': '',
@@ -366,9 +366,12 @@ class KioAssetDashboardService(models.AbstractModel):
     def _locations(self, rows):
         counts = {}
         for row in rows:
-            counts[row['location']] = counts.get(row['location'], 0) + 1
+            location = row.get('location')
+            if not location or location == '-':
+                continue
+            counts[location] = counts.get(location, 0) + 1
         tones = ['blue', 'teal', 'amber', 'purple', 'red']
-        return [{'label': label, 'value': value, 'tone': tones[index % len(tones)]} for index, (label, value) in enumerate(counts.items())] or [{'label': 'Head Office', 'value': 0, 'tone': 'blue'}]
+        return [{'label': label, 'value': value, 'tone': tones[index % len(tones)]} for index, (label, value) in enumerate(counts.items())]
 
     def _recent_assigned_assets(self, rows):
         recent = []

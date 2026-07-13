@@ -270,6 +270,11 @@ export class AssetDashboard extends Component {
         return Math.max(...this.locations.map((location) => Number(location.value) || 0), 1);
     }
 
+    get locationAxisLabels() {
+        const max = this.maxLocationValue;
+        return [max, max * 0.75, max * 0.5, max * 0.25, 0].map((value) => Math.round(value));
+    }
+
     onAssetSearch(event) {
         this.state.assetSearch = event.target.value;
         this.state.assetPage = 1;

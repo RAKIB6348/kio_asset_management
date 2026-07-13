@@ -100,7 +100,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="displayAssetRows" t-as="row" t-key="row.rowKey || row.code">
+                                <t t-if="displayAssetRows.length" t-foreach="displayAssetRows" t-as="row" t-key="row.rowKey || row.code">
                                     <tr>
                                         <td><input type="checkbox"/></td>
                                         <td><a href="#" t-on-click.prevent="() => this.openAssetDetails(row)" t-esc="row.code"/></td>
@@ -125,6 +125,7 @@
                                         </td>
                                     </tr>
                                 </t>
+                                <tr t-if="!displayAssetRows.length"><td colspan="14">No data available</td></tr>
                             </tbody>
                         </table>
                     </div>

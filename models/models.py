@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
+from odoo.tools import date_utils
 from odoo.exceptions import UserError, ValidationError
 from dateutil.relativedelta import relativedelta
 from datetime import date
-import calendar
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -773,10 +773,11 @@ class KioAssetDashboardService(models.AbstractModel):
         opening = purchase_value
         accumulated = 0.0
         currency = unit.currency_id or unit.company_id.currency_id
+        first_schedule_month = date_utils.start_of(start_date, 'month')
         for index in range(months):
-            period_start = start_date + relativedelta(months=index)
-            last_day = calendar.monthrange(period_start.year, period_start.month)[1]
-            period_end = period_start.replace(day=last_day)
+            month_date = first_schedule_month + relativedelta(months=index)
+            period_start = date_utils.start_of(month_date, 'month')
+            period_end = date_utils.end_of(month_date, 'month')
             remaining = max(opening - ending_book_value, 0.0)
             amount = remaining if index == months - 1 else min(currency.round(monthly_amount), remaining)
             accumulated += amount

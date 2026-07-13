@@ -45,9 +45,9 @@
                             <label class="kio_form_field"><span>Barcode / QR Code</span><input t-att-value="addAssetForm.barcode"/></label>
                             <label class="kio_form_field"><span>Status <b>*</b></span><select><option t-esc="addAssetForm.status"/></select></label>
                             <label class="kio_form_field"><span>Asset Type <b>*</b></span><select><option t-esc="addAssetForm.assetType"/></select></label>
-                            <label class="kio_form_field"><span>Purchase Date <b>*</b></span><div class="kio_input_icon"><input t-att-value="addAssetForm.purchaseDate"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Purchase Date <b>*</b></span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.purchaseDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('purchaseDate', ev)" t-on-change="(ev) => this.onAssetDateInput('purchaseDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                             <label class="kio_form_field"><span>Purchase Price (৳) <b>*</b></span><input t-att-value="addAssetForm.purchasePrice"/></label>
-                            <label class="kio_form_field"><span>Warranty Expiry Date</span><div class="kio_input_icon"><input t-att-value="addAssetForm.warrantyExpiry"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Warranty Expiry Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.warrantyExpiry" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('warrantyExpiry', ev)" t-on-change="(ev) => this.onAssetDateInput('warrantyExpiry', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                             <label class="kio_form_field"><span>Condition</span><select><option t-esc="addAssetForm.condition"/></select></label>
                             <label class="kio_form_field kio_span_4"><span>Description</span><textarea><t t-esc="addAssetForm.description"/></textarea></label>
                         </div>
@@ -79,8 +79,8 @@
                         <div class="kio_form_grid kio_form_grid_2">
                             <label class="kio_form_field"><span>Assign To</span><select t-att-value="addAssetForm.assignToId || &quot;&quot;" t-on-change="onAssignToChange"><option value="" t-att-selected="!addAssetForm.assignToId">Select Employee</option><t t-foreach="employeeOptions" t-as="employee" t-key="employee.id"><option t-att-value="employee.idValue" t-att-selected="(addAssetForm.assignToId || &quot;&quot;) === employee.idValue" t-esc="employee.name"/></t></select></label>
                             <label class="kio_form_field"><span>Employee ID</span><input t-att-value="addAssetForm.employeeId"/></label>
-                            <label class="kio_form_field"><span>Assign Date</span><div class="kio_input_icon"><input t-att-value="addAssetForm.assignDate"/><i class="fa fa-calendar"/></div></label>
-                            <label class="kio_form_field"><span>Expected Return Date</span><div class="kio_input_icon"><input placeholder="dd/mm/yyyy"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Assign Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.assignDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('assignDate', ev)" t-on-change="(ev) => this.onAssetDateInput('assignDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
+                            <label class="kio_form_field"><span>Expected Return Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.expectedReturnDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('expectedReturnDate', ev)" t-on-change="(ev) => this.onAssetDateInput('expectedReturnDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                         </div>
                     </article>
                     <article class="kio_form_card">
@@ -89,7 +89,7 @@
                             <label class="kio_form_field"><span>Depreciation Method <b>*</b></span><select><option t-esc="addAssetForm.depreciationMethod"/></select></label>
                             <label class="kio_form_field"><span>Useful Life (Years) <b>*</b></span><input t-att-value="addAssetForm.usefulLife"/></label>
                             <label class="kio_form_field"><span>Residual Value (৳)</span><input t-att-value="addAssetForm.residualValue"/></label>
-                            <label class="kio_form_field"><span>Depreciation Start Date <b>*</b></span><div class="kio_input_icon"><input t-att-value="addAssetForm.depreciationStartDate"/><i class="fa fa-calendar"/></div></label>
+                            <label class="kio_form_field"><span>Depreciation Start Date <b>*</b></span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.depreciationStartDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('depreciationStartDate', ev)" t-on-change="(ev) => this.onAssetDateInput('depreciationStartDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                         </div>
                     </article>
                 </section>

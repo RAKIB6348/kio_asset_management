@@ -102,6 +102,23 @@ export class DepreciationDashboard extends Component {
         this.state.data.filters.fiscalYear = event.target.value;
     }
 
+    openDepreciationDatePicker(event) {
+        const target = event.currentTarget;
+        const wrapper = target.closest ? target.closest(".kio_depr_date") : null;
+        const input = target.matches && target.matches("input") ? target : wrapper && wrapper.querySelector("input[type='date']");
+        if (!input) {
+            return;
+        }
+        input.focus();
+        if (typeof input.showPicker === "function") {
+            try {
+                input.showPicker();
+            } catch {
+                // Focusing the date input still lets the browser handle unsupported picker calls.
+            }
+        }
+    }
+
     onFromDateChange(event) {
         this.state.data.filters.fromDate = event.target.value;
     }

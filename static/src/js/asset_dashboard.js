@@ -20,6 +20,7 @@ const ROUTE_KEYS = {
 
 const VALID_PAGES = new Set(["dashboard", "asset_list", "asset_details", "add_asset"]);
 const VALID_FORM_MODES = new Set(["create", "edit"]);
+const ASSET_DATE_FIELDS = new Set(["purchaseDate", "warrantyExpiry", "assignDate", "expectedReturnDate", "depreciationStartDate"]);
 
 export class AssetDashboard extends Component {
     static template = "kio_asset_management.AssetDashboard";
@@ -183,8 +184,12 @@ export class AssetDashboard extends Component {
             barcode: row.serial,
             status: row.status,
             assetType: "Tangible",
-            purchaseDate: row.purchaseDate,
+            purchaseDate: this.normalizeDateInput(row.purchaseDate),
             purchasePrice: row.price,
+            warrantyExpiry: this.normalizeDateInput(row.warrantyExpiry),
+            assignDate: this.normalizeDateInput(row.assignDate),
+            expectedReturnDate: this.normalizeDateInput(row.expectedReturnDate),
+            depreciationStartDate: this.normalizeDateInput(row.depreciationStartDate),
             supplier: row.vendor || "",
             invoiceNumber: row.invoiceNumber || "",
             poNumber: row.poNumber || "",
@@ -344,11 +349,7 @@ export class AssetDashboard extends Component {
         this.state.previousPage = this.state.page;
         this.state.assetFormMode = "create";
         this.state.editingAssetId = false;
-        Object.assign(this.addAssetForm, {
-            imagePreviewUrl: "",
-            imageBinary: false,
-            imageChanged: false,
-        });
+        this.resetAddAssetForm();
         this.state.page = "add_asset";
         this.updateRoute();
     }
@@ -392,7 +393,11 @@ export class AssetDashboard extends Component {
 
     async saveAsset() {
         if (this.state.assetFormMode === "edit" && this.state.editingAssetId) {
-            await this.orm.call("kio.asset.dashboard.service", "update_asset_assignment", [this.state.editingAssetId, this.addAssetForm.assignToId || false]);
+            await this.orm.call("kio.asset.dashboard.service", "update_asset_assignment", [
+                this.state.editingAssetId,
+                this.addAssetForm.assignToId || false,
+                this.getAssetDatePayload(),
+            ]);
             if (this.addAssetForm.imageChanged && this.addAssetForm.imageBinary) {
                 const imageResult = await this.orm.call("kio.asset.dashboard.service", "update_asset_image", [this.state.editingAssetId, this.addAssetForm.imageBinary]);
                 if (imageResult && imageResult.imageUrl) {
@@ -418,6 +423,85 @@ export class AssetDashboard extends Component {
         this.addAssetForm.assignToId = employeeId;
         this.addAssetForm.assignTo = employee ? employee.name : "";
         this.addAssetForm.employeeId = employee ? (employee.employeeCode || "-") : "-";
+    }
+
+    onAssetDateInput(fieldName, event) {
+        if (!ASSET_DATE_FIELDS.has(fieldName)) {
+            return;
+        }
+        this.addAssetForm[fieldName] = event.target.value || "";
+    }
+
+    openAssetDatePicker(event) {
+        const target = event.currentTarget;
+        const wrapper = target.closest ? target.closest(".kio_input_icon") : null;
+        const input = target.matches && target.matches("input") ? target : wrapper && wrapper.querySelector("input[type='date']");
+        if (!input) {
+            return;
+        }
+        input.focus();
+        if (typeof input.showPicker === "function") {
+            try {
+                input.showPicker();
+            } catch {
+                // Focusing the date input still lets the browser handle unsupported picker calls.
+            }
+        }
+    }
+
+    getAssetDatePayload() {
+        return {
+            warrantyExpiry: this.addAssetForm.warrantyExpiry || false,
+            assignDate: this.addAssetForm.assignDate || false,
+            expectedReturnDate: this.addAssetForm.expectedReturnDate || false,
+            depreciationStartDate: this.addAssetForm.depreciationStartDate || false,
+        };
+    }
+
+    normalizeDateInput(value) {
+        if (!value || value === "-") {
+            return "";
+        }
+        return String(value).slice(0, 10);
+    }
+
+    resetAddAssetForm() {
+        Object.assign(this.addAssetForm, {
+            assetCode: "",
+            assetName: "",
+            category: "",
+            brandModel: "",
+            serialNumber: "",
+            barcode: "",
+            status: "",
+            assetType: "",
+            purchaseDate: "",
+            purchasePrice: "",
+            warrantyExpiry: "",
+            condition: "",
+            description: "",
+            location: "",
+            buildingFloor: "",
+            roomArea: "",
+            department: "",
+            assignTo: "",
+            assignToId: "",
+            employeeId: "",
+            assignDate: "",
+            expectedReturnDate: "",
+            depreciationMethod: "",
+            usefulLife: "",
+            residualValue: "",
+            depreciationStartDate: "",
+            supplier: "",
+            invoiceNumber: "",
+            poNumber: "",
+            tagsNotes: "",
+            active: true,
+            imagePreviewUrl: "",
+            imageBinary: false,
+            imageChanged: false,
+        });
     }
 
     onAssetImageChange(event) {
@@ -451,9 +535,9 @@ export class AssetDashboard extends Component {
             barcode: this.selectedAsset.barcode,
             status: this.selectedAsset.status,
             assetType: this.selectedAsset.assetType,
-            purchaseDate: this.selectedAsset.purchaseDate,
+            purchaseDate: this.normalizeDateInput(this.selectedAsset.purchaseDate),
             purchasePrice: this.selectedAsset.purchasePrice.replace("৳ ", ""),
-            warrantyExpiry: this.selectedAsset.warrantyExpiry,
+            warrantyExpiry: this.normalizeDateInput(this.selectedAsset.warrantyExpiry),
             condition: this.selectedAsset.condition,
             description: this.selectedAsset.description,
             location: this.selectedAsset.location.location,
@@ -463,8 +547,8 @@ export class AssetDashboard extends Component {
             assignTo: this.selectedAsset.assignment.assignedTo,
             assignToId: this.selectedAsset.assignment.assignedToId ? String(this.selectedAsset.assignment.assignedToId) : "",
             employeeId: this.selectedAsset.assignment.employeeId,
-            assignDate: this.selectedAsset.assignment.assignDate,
-            expectedReturnDate: this.selectedAsset.assignment.expectedReturn,
+            assignDate: this.normalizeDateInput(this.selectedAsset.assignment.assignDate),
+            expectedReturnDate: this.normalizeDateInput(this.selectedAsset.assignment.expectedReturn),
             supplier: this.selectedAsset.supplier,
             invoiceNumber: this.selectedAsset.invoiceNumber,
             poNumber: this.selectedAsset.poNumber,

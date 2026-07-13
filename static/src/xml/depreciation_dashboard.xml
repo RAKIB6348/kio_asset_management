@@ -28,8 +28,8 @@
                     <label><span>Asset</span><select t-att-value="state.selectedAssetId || ''" t-att-disabled="state.assetSelectionLocked" t-on-change="onAssetChange"><option value="" t-att-selected="!state.selectedAssetId">Select Asset</option><t t-foreach="state.data.assetOptions" t-as="asset" t-key="asset.id"><option t-att-value="asset.id" t-att-selected="asset.id === state.selectedAssetId" t-esc="asset.label"/></t></select></label>
                     <label><span>Depreciation Method</span><select t-att-value="state.data.filters.method" t-on-change="onMethodChange"><t t-foreach="state.data.methodOptions" t-as="method" t-key="method.value"><option t-att-value="method.value" t-esc="method.label"/></t></select></label>
                     <label><span>Fiscal Year</span><select t-att-value="state.data.filters.fiscalYear" t-on-change="onFiscalYearChange"><t t-foreach="state.data.fiscalYearOptions" t-as="year" t-key="year.value"><option t-att-value="year.value" t-esc="year.label"/></t></select></label>
-                    <label><span>From Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.fromDate" t-on-change="onFromDateChange"/><i class="fa fa-calendar"/></div></label>
-                    <label><span>To Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.toDate" t-on-change="onToDateChange"/><i class="fa fa-calendar"/></div></label>
+                    <label><span>From Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.fromDate" t-on-click="openDepreciationDatePicker" t-on-change="onFromDateChange"/><i class="fa fa-calendar" t-on-click="openDepreciationDatePicker"/></div></label>
+                    <label><span>To Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.toDate" t-on-click="openDepreciationDatePicker" t-on-change="onToDateChange"/><i class="fa fa-calendar" t-on-click="openDepreciationDatePicker"/></div></label>
                 </section>
 
                 <t t-if="state.data.emptyMessage">
@@ -91,8 +91,8 @@
                                     <span>Depreciation Start Date</span>
                                     <t t-if="state.summaryEditMode">
                                         <div class="kio_depr_date">
-                                            <input class="kio_depr_summary_input" type="date" t-att-value="state.summaryForm.depreciationStartDate" t-on-change="(ev) => this.onSummaryFieldInput('depreciationStartDate', ev)"/>
-                                            <i class="fa fa-calendar"/>
+                                            <input class="kio_depr_summary_input" type="date" t-att-value="state.summaryForm.depreciationStartDate" t-on-click="openDepreciationDatePicker" t-on-input="(ev) => this.onSummaryFieldInput('depreciationStartDate', ev)" t-on-change="(ev) => this.onSummaryFieldInput('depreciationStartDate', ev)"/>
+                                            <i class="fa fa-calendar" t-on-click="openDepreciationDatePicker"/>
                                         </div>
                                         <small t-if="state.summaryErrors.depreciationStartDate" class="kio_depr_summary_error" t-esc="state.summaryErrors.depreciationStartDate"/>
                                     </t>
@@ -167,7 +167,7 @@
                             <label class="kio_depr_toggle"><span>Auto Create Journal Entries</span><input type="checkbox" t-att-checked="state.data.automation.autoCreate" t-on-change="onAutoCreateChange"/><em/></label>
                             <div class="kio_depr_automation_grid">
                                 <label><span>Create Journal</span><select t-att-value="state.data.automation.createJournal" t-on-change="onCreateJournalChange"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select></label>
-                                <label><span>Next Run Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.automation.nextRunDate" t-on-change="onNextRunDateChange"/><i class="fa fa-calendar"/></div></label>
+                                <label><span>Next Run Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.automation.nextRunDate" t-on-click="openDepreciationDatePicker" t-on-change="onNextRunDateChange"/><i class="fa fa-calendar" t-on-click="openDepreciationDatePicker"/></div></label>
                                 <label><span>Journal</span><select t-att-value="state.data.automation.journalId || ''" t-on-change="onJournalChange"><option value="">Select Journal</option><t t-foreach="state.data.journalOptions" t-as="journal" t-key="journal.id"><option t-att-value="journal.id" t-esc="journal.name"/></t></select></label>
                             </div>
                         </article>

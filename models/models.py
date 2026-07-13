@@ -21,6 +21,9 @@ class KioAssetUnit(models.Model):
     asset_code = fields.Char(required=True, copy=False, index=True)
     image_1920 = fields.Image("Asset Image", max_width=1920, max_height=1920)
     assigned_employee_id = fields.Many2one("hr.employee", string="Assigned To", index=True, ondelete="set null")
+    warranty_expiry_date = fields.Date(string="Warranty Expiry Date")
+    assign_date = fields.Date(string="Assign Date")
+    expected_return_date = fields.Date(string="Expected Return Date")
     depreciation_method = fields.Selection([
         ('straight_line', 'Straight Line'),
         ('declining_balance', 'Declining Balance'),
@@ -233,6 +236,10 @@ class KioAssetDashboardService(models.AbstractModel):
                     'assignedToId': employee.id if employee else False,
                     'assignedMeta': employee.department_id.name if employee and employee.department_id else '',
                     'employeeCode': (employee.identification_id or employee.barcode or '-') if employee else '-',
+                    'warrantyExpiry': self._format_date(unit.warranty_expiry_date),
+                    'assignDate': self._format_date(unit.assign_date),
+                    'expectedReturnDate': self._format_date(unit.expected_return_date),
+                    'depreciationStartDate': self._format_date(unit.depreciation_start_date),
                     'status': 'Assigned' if employee else row.get('status', 'Available'),
                     'tone': 'blue' if employee else row.get('tone', 'green'),
                     'code': asset_code,
@@ -294,12 +301,23 @@ class KioAssetDashboardService(models.AbstractModel):
         }
 
     @api.model
-    def update_asset_assignment(self, asset_id, employee_id=False):
+    def update_asset_assignment(self, asset_id, employee_id=False, values=None):
         unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
         if not unit.exists():
             return False
         employee_id = int(employee_id) if employee_id else False
-        unit.write({'assigned_employee_id': employee_id})
+        write_vals = {'assigned_employee_id': employee_id}
+        values = values or {}
+        date_field_map = {
+            'warrantyExpiry': 'warranty_expiry_date',
+            'assignDate': 'assign_date',
+            'expectedReturnDate': 'expected_return_date',
+            'depreciationStartDate': 'depreciation_start_date',
+        }
+        for source_field, target_field in date_field_map.items():
+            if source_field in values:
+                write_vals[target_field] = self._parse_row_date(values.get(source_field)) or False
+        unit.write(write_vals)
         return True
 
     @api.model
@@ -336,11 +354,11 @@ class KioAssetDashboardService(models.AbstractModel):
             'purchasePriceShort': row['price'],
             'currentValue': row['price'],
             'accumulatedDepreciation': self._format_money(0.0),
-            'warrantyExpiry': '-',
-            'expectedReturn': '-',
+            'warrantyExpiry': row.get('warrantyExpiry') or '-',
+            'expectedReturn': row.get('expectedReturnDate') or '-',
             'usefulLife': '-',
             'invoiceFile': row.get('invoiceNumber') or '-',
-            'assignment': {'assignedTo': row['assignedTo'], 'assignedToId': row.get('assignedToId') or False, 'department': row['assignedMeta'], 'employeeId': row.get('employeeCode') or '-', 'assignDate': '-', 'expectedReturn': '-'},
+            'assignment': {'assignedTo': row['assignedTo'], 'assignedToId': row.get('assignedToId') or False, 'department': row['assignedMeta'], 'employeeId': row.get('employeeCode') or '-', 'assignDate': row.get('assignDate') or '-', 'expectedReturn': row.get('expectedReturnDate') or '-'},
             'location': {'location': row['location'], 'buildingFloor': '-', 'roomArea': '-', 'department': row['locationMeta']},
             'maintenanceRows': [],
         }

@@ -28,8 +28,8 @@ export function buildAssetDetails(row = {}) {
         purchasePriceShort: row.price || "-",
         currentValue: row.price || "-",
         accumulatedDepreciation: "-",
-        warrantyExpiry: "-",
-        expectedReturn: "-",
+        warrantyExpiry: row.warrantyExpiry || "-",
+        expectedReturn: row.expectedReturnDate || "-",
         usefulLife: "-",
         invoiceFile: row.invoiceNumber || "-",
         assignment: {
@@ -37,8 +37,8 @@ export function buildAssetDetails(row = {}) {
             assignedToId: row.assignedToId || false,
             department: row.assignedMeta || "-",
             employeeId: row.employeeCode || "-",
-            assignDate: "-",
-            expectedReturn: "-",
+            assignDate: row.assignDate || "-",
+            expectedReturn: row.expectedReturnDate || "-",
         },
         location: {
             location: row.location || "-",

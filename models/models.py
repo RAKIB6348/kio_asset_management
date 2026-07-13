@@ -1033,18 +1033,91 @@ class KioAssetDashboardService(models.AbstractModel):
         ], order='company_id desc, id asc', limit=1)
 
     def _product_depreciation_debit_account(self, unit):
+        account = self._purchase_bill_debit_account(unit)
+        if account:
+            return account
+
+        account = self._product_category_asset_account(unit)
+        if account:
+            return account
+
+        account = self._fallback_product_debit_account(unit)
+        if account:
+            return account
+
+        raise ValidationError('Unable to determine the purchase asset account. Please verify the Vendor Bill or Product Category accounting configuration.')
+
+    def _purchase_bill_debit_account(self, unit):
         product = unit.product_id
-        template = product.product_tmpl_id
-        account = False
-        if 'property_account_expense_id' in product._fields:
-            account = product.property_account_expense_id
-        if not account and template and 'property_account_expense_id' in template._fields:
-            account = template.property_account_expense_id
-        if not account and product.categ_id and 'property_account_expense_categ_id' in product.categ_id._fields:
-            account = product.categ_id.property_account_expense_categ_id
-        if not account or account.deprecated:
-            raise ValidationError('Please configure an account on the related product before generating depreciation entries.')
-        return account
+        company = unit.company_id or self.env.company
+        if not product:
+            return False
+
+        MoveLine = self.env['account.move.line'].sudo()
+        base_domain = [
+            ('product_id', '=', product.id),
+            ('move_id.state', '=', 'posted'),
+            ('move_id.move_type', 'in', ['in_invoice', 'entry']),
+            ('move_id.journal_id.type', '=', 'purchase'),
+            ('company_id', '=', company.id),
+            ('display_type', 'not in', ['line_section', 'line_note']),
+            ('debit', '>', 0.0),
+            ('account_id.deprecated', '=', False),
+            ('account_id.company_id', '=', company.id),
+        ]
+        invoice_number = (unit.invoice_number or '').strip()
+        if invoice_number and invoice_number != '-':
+            for move_field in ('name', 'ref'):
+                line = MoveLine.search(
+                    base_domain + [('move_id.%s' % move_field, '=', invoice_number)],
+                    order='date desc, id desc',
+                    limit=1,
+                )
+                if line:
+                    return line.account_id
+
+        line = MoveLine.search(base_domain, order='date desc, id desc', limit=1)
+        return line.account_id if line else False
+
+    def _product_category_asset_account(self, unit):
+        product = unit.product_id
+        category = product.categ_id if product else False
+        company = unit.company_id or self.env.company
+        if not category:
+            return False
+
+        candidate_fields = (
+            'property_stock_valuation_account_id',
+            'property_account_asset_id',
+            'account_asset_id',
+        )
+        for field_name in candidate_fields:
+            if field_name in category._fields:
+                account = category[field_name]
+                if self._valid_depreciation_debit_account(account, company):
+                    return account
+        return False
+
+    def _fallback_product_debit_account(self, unit):
+        product = unit.product_id
+        template = product.product_tmpl_id if product else False
+        category = product.categ_id if product else False
+        company = unit.company_id or self.env.company
+        candidates = []
+        if product and 'property_account_expense_id' in product._fields:
+            candidates.append(product.property_account_expense_id)
+        if template and 'property_account_expense_id' in template._fields:
+            candidates.append(template.property_account_expense_id)
+        if category and 'property_account_expense_categ_id' in category._fields:
+            candidates.append(category.property_account_expense_categ_id)
+
+        for account in candidates:
+            if self._valid_depreciation_debit_account(account, company):
+                return account
+        return False
+
+    def _valid_depreciation_debit_account(self, account, company):
+        return bool(account and not account.deprecated and account.company_id and account.company_id.id == company.id)
 
     def _depreciation_expense_account(self, unit):
         account = unit.depreciation_expense_account_id

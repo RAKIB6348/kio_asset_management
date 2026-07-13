@@ -252,6 +252,32 @@ export class AssetDashboard extends Component {
         return Math.max(Math.ceil(this.filteredAssetRows.length / this.state.assetPageSize), 1);
     }
 
+    get assetPaginationItems() {
+        const totalPages = this.assetPageCount;
+        const currentPage = Math.min(Math.max(this.state.assetPage, 1), totalPages);
+        const visiblePages = new Set([1, totalPages]);
+
+        for (let page = currentPage - 1; page <= currentPage + 1; page += 1) {
+            if (page >= 1 && page <= totalPages) {
+                visiblePages.add(page);
+            }
+        }
+
+        const pages = [...visiblePages].sort((left, right) => left - right);
+        const items = [];
+        let previousPage = 0;
+
+        for (const page of pages) {
+            if (page - previousPage > 1) {
+                items.push({ key: `ellipsis-${previousPage}-${page}`, type: "ellipsis" });
+            }
+            items.push({ key: `page-${page}`, type: "page", page });
+            previousPage = page;
+        }
+
+        return items;
+    }
+
     get assetListShowingText() {
         const total = this.filteredAssetRows.length;
         if (!total) {

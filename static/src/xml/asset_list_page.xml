@@ -133,11 +133,10 @@
                         <div class="kio_page_size">Show <select t-att-value="state.assetPageSize" t-on-change="onAssetPageSizeChange"><option>10</option><option>25</option><option>50</option><option>100</option><option>200</option><option>500</option></select> per page</div>
                         <div class="kio_page_numbers">
                             <button type="button" t-on-click="previousAssetPage"><i class="fa fa-angle-left"/></button>
-                            <button t-att-class="state.assetPage === 1 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(1)">1</button>
-                            <button t-if="assetPageCount >= 2" t-att-class="state.assetPage === 2 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(2)">2</button>
-                            <button t-if="assetPageCount >= 3" t-att-class="state.assetPage === 3 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(3)">3</button>
-                            <span t-if="assetPageCount > 4">...</span>
-                            <button t-if="assetPageCount > 3" t-att-class="state.assetPage === assetPageCount ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(assetPageCount)" t-esc="assetPageCount"/>
+                            <t t-foreach="assetPaginationItems" t-as="item" t-key="item.key">
+                                <button t-if="item.type === 'page'" t-att-class="state.assetPage === item.page ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(item.page)" t-esc="item.page"/>
+                                <span t-else="">...</span>
+                            </t>
                             <button type="button" t-on-click="nextAssetPage"><i class="fa fa-angle-right"/></button>
                         </div>
                     </div>

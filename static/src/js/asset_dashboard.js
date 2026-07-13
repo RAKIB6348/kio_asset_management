@@ -21,6 +21,34 @@ const ROUTE_KEYS = {
 const VALID_PAGES = new Set(["dashboard", "asset_list", "asset_details", "add_asset"]);
 const VALID_FORM_MODES = new Set(["create", "edit"]);
 const ASSET_DATE_FIELDS = new Set(["purchaseDate", "warrantyExpiry", "assignDate", "expectedReturnDate", "depreciationStartDate"]);
+const ASSET_TEXT_FIELDS = new Set([
+    "assetCode",
+    "assetName",
+    "category",
+    "brandModel",
+    "serialNumber",
+    "barcode",
+    "status",
+    "assetType",
+    "purchasePrice",
+    "warrantyExpiry",
+    "condition",
+    "description",
+    "location",
+    "buildingFloor",
+    "roomArea",
+    "department",
+    "assignDate",
+    "expectedReturnDate",
+    "depreciationMethod",
+    "usefulLife",
+    "residualValue",
+    "depreciationStartDate",
+    "supplier",
+    "invoiceNumber",
+    "poNumber",
+    "tagsNotes",
+]);
 
 export class AssetDashboard extends Component {
     static template = "kio_asset_management.AssetDashboard";
@@ -42,6 +70,8 @@ export class AssetDashboard extends Component {
             editingAssetId: initialRouteState.editingAssetId,
             selectedAssetId: initialRouteState.selectedAssetId,
             imageVersion: 0,
+            isSavingAsset: false,
+            saveAssetError: "",
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -181,30 +211,38 @@ export class AssetDashboard extends Component {
             category: row.category,
             brandModel: row.brand,
             serialNumber: row.serial,
-            barcode: row.serial,
+            barcode: row.barcode || row.serial,
             status: row.status,
-            assetType: "Tangible",
+            assetType: row.assetType || "Tangible",
             purchaseDate: this.normalizeDateInput(row.purchaseDate),
-            purchasePrice: row.price,
+            purchasePrice: this.moneyToInput(row.price),
             warrantyExpiry: this.normalizeDateInput(row.warrantyExpiry),
             assignDate: this.normalizeDateInput(row.assignDate),
             expectedReturnDate: this.normalizeDateInput(row.expectedReturnDate),
             depreciationStartDate: this.normalizeDateInput(row.depreciationStartDate),
-            supplier: row.vendor || "",
+            condition: row.condition || "",
+            description: row.description || "",
+            supplier: row.supplier || row.vendor || "",
             invoiceNumber: row.invoiceNumber || "",
             poNumber: row.poNumber || "",
             location: row.location,
-            department: row.locationMeta || "",
+            buildingFloor: row.buildingFloor || "",
+            roomArea: row.roomArea || "",
+            department: row.department || row.locationMeta || "",
             assignTo: row.assignedTo,
             assignToId: row.assignedToId ? String(row.assignedToId) : "",
             employeeId: row.employeeCode || "-",
+            depreciationMethod: row.depreciationMethod || "straight_line",
+            usefulLife: row.usefulLife ? String(row.usefulLife) : "",
+            residualValue: row.residualValue !== undefined && row.residualValue !== null ? String(row.residualValue) : "",
             imagePreviewUrl: row.imageUrl || "",
             imageBinary: false,
+            active: row.active !== false,
             imageChanged: false,
         });
     }
 
-    async loadDynamicAssetData() {
+    async loadDynamicAssetData(options = {}) {
         try {
             const data = await this.orm.call("kio.asset.dashboard.service", "get_asset_dashboard_data", []);
             if (data) {
@@ -225,7 +263,9 @@ export class AssetDashboard extends Component {
                 this.depreciationSummary = data.depreciationSummary || this.depreciationSummary;
                 this.assignedAssets = data.assignedAssets || [];
                 this.restoreSelectedAsset();
-                this.restoreAssetForm();
+                if (!options.skipFormRestore) {
+                    this.restoreAssetForm();
+                }
             }
         } catch (error) {
             console.warn("Asset dashboard dynamic data fallback", error);
@@ -350,6 +390,7 @@ export class AssetDashboard extends Component {
         this.state.assetFormMode = "create";
         this.state.editingAssetId = false;
         this.resetAddAssetForm();
+        this.state.saveAssetError = "";
         this.state.page = "add_asset";
         this.updateRoute();
     }
@@ -365,6 +406,7 @@ export class AssetDashboard extends Component {
         this.state.editingAssetId = assetId;
         this.state.selectedAssetId = assetId;
         this.fillAssetFormFromRow(row);
+        this.state.saveAssetError = "";
         this.state.page = "add_asset";
         this.updateRoute();
     }
@@ -392,27 +434,38 @@ export class AssetDashboard extends Component {
     }
 
     async saveAsset() {
+        if (this.state.isSavingAsset) {
+            return;
+        }
+        this.state.saveAssetError = "";
+
         if (this.state.assetFormMode === "edit" && this.state.editingAssetId) {
-            await this.orm.call("kio.asset.dashboard.service", "update_asset_assignment", [
-                this.state.editingAssetId,
-                this.addAssetForm.assignToId || false,
-                this.getAssetDatePayload(),
-            ]);
-            if (this.addAssetForm.imageChanged && this.addAssetForm.imageBinary) {
-                const imageResult = await this.orm.call("kio.asset.dashboard.service", "update_asset_image", [this.state.editingAssetId, this.addAssetForm.imageBinary]);
-                if (imageResult && imageResult.imageUrl) {
-                    this.addAssetForm.imagePreviewUrl = `${imageResult.imageUrl}&client_refresh=${Date.now()}`;
+            this.state.isSavingAsset = true;
+            try {
+                const assetId = Number(this.state.editingAssetId);
+                const vals = this.buildAssetWriteValues();
+                await this.orm.write("kio.asset.unit", [assetId], vals);
+                await this.loadDynamicAssetData({ skipFormRestore: true });
+                const updatedRow = this.assetRows.find((asset) => asset.id === assetId);
+                if (updatedRow) {
+                    this.selectedAsset = buildAssetDetails(updatedRow);
+                    this.fillAssetFormFromRow(updatedRow);
+                    this.state.selectedAssetId = assetId;
                 }
                 this.addAssetForm.imageBinary = false;
                 this.addAssetForm.imageChanged = false;
                 this.state.imageVersion += 1;
+                this.closeAddAsset();
+            } catch (error) {
+                console.error("Could not save asset", error);
+                this.state.saveAssetError = this.errorMessage(error);
+            } finally {
+                this.state.isSavingAsset = false;
             }
-            await this.loadDynamicAssetData();
-            this.closeAddAsset();
             return;
         }
 
-        // Placeholder hook for future ORM/RPC persistence.
+        // Existing Add Asset flow is intentionally unchanged by the edit-save fix.
         console.info("Save Asset", this.addAssetForm);
         this.closeAddAsset();
     }
@@ -423,6 +476,17 @@ export class AssetDashboard extends Component {
         this.addAssetForm.assignToId = employeeId;
         this.addAssetForm.assignTo = employee ? employee.name : "";
         this.addAssetForm.employeeId = employee ? (employee.employeeCode || "-") : "-";
+    }
+
+    onAssetFormInput(fieldName, event) {
+        if (!ASSET_TEXT_FIELDS.has(fieldName)) {
+            return;
+        }
+        this.addAssetForm[fieldName] = event.target.value || "";
+    }
+
+    onAssetActiveChange(event) {
+        this.addAssetForm.active = Boolean(event.target.checked);
     }
 
     onAssetDateInput(fieldName, event) {
@@ -449,13 +513,66 @@ export class AssetDashboard extends Component {
         }
     }
 
-    getAssetDatePayload() {
-        return {
-            warrantyExpiry: this.addAssetForm.warrantyExpiry || false,
-            assignDate: this.addAssetForm.assignDate || false,
-            expectedReturnDate: this.addAssetForm.expectedReturnDate || false,
-            depreciationStartDate: this.addAssetForm.depreciationStartDate || false,
+    buildAssetWriteValues() {
+        const vals = {
+            asset_name: this.optionalText(this.addAssetForm.assetName),
+            category_name: this.optionalText(this.addAssetForm.category),
+            brand_model: this.optionalText(this.addAssetForm.brandModel),
+            serial_number: this.optionalText(this.addAssetForm.serialNumber),
+            barcode: this.optionalText(this.addAssetForm.barcode),
+            status: this.optionalText(this.addAssetForm.status),
+            asset_type: this.optionalText(this.addAssetForm.assetType),
+            purchase_date: this.normalizeDateInput(this.addAssetForm.purchaseDate) || false,
+            purchase_price: this.parseNumberInput(this.addAssetForm.purchasePrice),
+            warranty_expiry_date: this.normalizeDateInput(this.addAssetForm.warrantyExpiry) || false,
+            condition: this.optionalText(this.addAssetForm.condition),
+            description: this.optionalText(this.addAssetForm.description),
+            location: this.optionalText(this.addAssetForm.location),
+            building_floor: this.optionalText(this.addAssetForm.buildingFloor),
+            room_area: this.optionalText(this.addAssetForm.roomArea),
+            department_name: this.optionalText(this.addAssetForm.department),
+            assigned_employee_id: this.addAssetForm.assignToId ? Number(this.addAssetForm.assignToId) : false,
+            assign_date: this.normalizeDateInput(this.addAssetForm.assignDate) || false,
+            expected_return_date: this.normalizeDateInput(this.addAssetForm.expectedReturnDate) || false,
+            depreciation_method: this.addAssetForm.depreciationMethod || "straight_line",
+            useful_life_years: this.parseIntegerInput(this.addAssetForm.usefulLife) || 1,
+            residual_value: this.parseNumberInput(this.addAssetForm.residualValue),
+            depreciation_start_date: this.normalizeDateInput(this.addAssetForm.depreciationStartDate) || false,
+            supplier: this.optionalText(this.addAssetForm.supplier),
+            invoice_number: this.optionalText(this.addAssetForm.invoiceNumber),
+            po_number: this.optionalText(this.addAssetForm.poNumber),
+            tags_notes: this.optionalText(this.addAssetForm.tagsNotes),
+            active: Boolean(this.addAssetForm.active),
         };
+        if (this.addAssetForm.imageChanged && this.addAssetForm.imageBinary) {
+            vals.image_1920 = this.addAssetForm.imageBinary;
+        }
+        return vals;
+    }
+
+    optionalText(value) {
+        const text = String(value || "").trim();
+        return text && text !== "-" ? text : false;
+    }
+
+    parseNumberInput(value) {
+        const normalized = String(value || "").replace(/[^0-9.-]/g, "");
+        const number = Number(normalized);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    parseIntegerInput(value) {
+        const number = parseInt(String(value || "").replace(/[^0-9-]/g, ""), 10);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    moneyToInput(value) {
+        const number = this.parseNumberInput(value);
+        return number ? String(number) : "";
+    }
+
+    errorMessage(error) {
+        return (error && error.data && error.data.message) || (error && error.message) || "The asset could not be saved. Please review the values and try again.";
     }
 
     normalizeDateInput(value) {
@@ -536,7 +653,7 @@ export class AssetDashboard extends Component {
             status: this.selectedAsset.status,
             assetType: this.selectedAsset.assetType,
             purchaseDate: this.normalizeDateInput(this.selectedAsset.purchaseDate),
-            purchasePrice: this.selectedAsset.purchasePrice.replace("৳ ", ""),
+            purchasePrice: this.moneyToInput(this.selectedAsset.purchasePrice),
             warrantyExpiry: this.normalizeDateInput(this.selectedAsset.warrantyExpiry),
             condition: this.selectedAsset.condition,
             description: this.selectedAsset.description,
@@ -549,14 +666,20 @@ export class AssetDashboard extends Component {
             employeeId: this.selectedAsset.assignment.employeeId,
             assignDate: this.normalizeDateInput(this.selectedAsset.assignment.assignDate),
             expectedReturnDate: this.normalizeDateInput(this.selectedAsset.assignment.expectedReturn),
+            depreciationMethod: this.selectedAsset.depreciationMethod || "straight_line",
+            usefulLife: this.selectedAsset.usefulLife && this.selectedAsset.usefulLife !== "-" ? String(this.selectedAsset.usefulLife).replace(/[^0-9]/g, "") : "",
+            residualValue: this.selectedAsset.residualValue !== undefined && this.selectedAsset.residualValue !== null ? String(this.selectedAsset.residualValue) : "",
+            depreciationStartDate: this.normalizeDateInput(this.selectedAsset.depreciationStartDate),
             supplier: this.selectedAsset.supplier,
             invoiceNumber: this.selectedAsset.invoiceNumber,
             poNumber: this.selectedAsset.poNumber,
             tagsNotes: this.selectedAsset.tagsNotes,
             imagePreviewUrl: this.selectedAsset.imageUrl || "",
             imageBinary: false,
+            active: this.selectedAsset.active !== false,
             imageChanged: false,
         });
+        this.state.saveAssetError = "";
         this.state.previousPage = this.state.page;
         this.state.page = "add_asset";
         this.updateRoute();

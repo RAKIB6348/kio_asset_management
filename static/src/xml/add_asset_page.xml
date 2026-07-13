@@ -30,26 +30,28 @@
             <main class="kio_add_main">
                 <div class="kio_add_actions">
                     <button class="kio_cancel_btn" type="button" t-on-click="closeAddAsset">Cancel</button>
-                    <button class="kio_save_btn" type="button" t-on-click="saveAsset"><i class="fa fa-floppy-o"/> Save Asset</button>
+                    <button class="kio_save_btn" type="button" t-att-disabled="state.isSavingAsset" t-on-click="saveAsset"><i class="fa fa-floppy-o"/> Save Asset</button>
                 </div>
+
+                <div t-if="state.saveAssetError" class="alert alert-danger" role="alert" t-esc="state.saveAssetError"/>
 
                 <section class="kio_add_top_grid">
                     <article class="kio_form_card kio_basic_card">
                         <div class="kio_form_card_header"><i class="fa fa-list-alt"/><h2>Basic Information</h2></div>
                         <div class="kio_form_grid kio_form_grid_4">
-                            <label class="kio_form_field"><span>Asset Code <b>*</b></span><input t-att-value="addAssetForm.assetCode"/></label>
-                            <label class="kio_form_field"><span>Asset Name <b>*</b></span><input t-att-value="addAssetForm.assetName"/></label>
-                            <label class="kio_form_field"><span>Asset Category <b>*</b></span><select><option t-esc="addAssetForm.category"/></select></label>
-                            <label class="kio_form_field"><span>Brand / Model</span><select><option t-esc="addAssetForm.brandModel"/></select></label>
-                            <label class="kio_form_field"><span>Serial Number <b>*</b></span><input t-att-value="addAssetForm.serialNumber"/></label>
-                            <label class="kio_form_field"><span>Barcode / QR Code</span><input t-att-value="addAssetForm.barcode"/></label>
-                            <label class="kio_form_field"><span>Status <b>*</b></span><select><option t-esc="addAssetForm.status"/></select></label>
-                            <label class="kio_form_field"><span>Asset Type <b>*</b></span><select><option t-esc="addAssetForm.assetType"/></select></label>
+                            <label class="kio_form_field"><span>Asset Code <b>*</b></span><input t-att-value="addAssetForm.assetCode" readonly="readonly"/></label>
+                            <label class="kio_form_field"><span>Asset Name <b>*</b></span><input t-att-value="addAssetForm.assetName" t-on-input="(ev) => this.onAssetFormInput('assetName', ev)"/></label>
+                            <label class="kio_form_field"><span>Asset Category <b>*</b></span><select t-att-value="addAssetForm.category" t-on-change="(ev) => this.onAssetFormInput('category', ev)"><option t-att-value="addAssetForm.category" t-esc="addAssetForm.category"/></select></label>
+                            <label class="kio_form_field"><span>Brand / Model</span><select t-att-value="addAssetForm.brandModel" t-on-change="(ev) => this.onAssetFormInput('brandModel', ev)"><option t-att-value="addAssetForm.brandModel" t-esc="addAssetForm.brandModel"/></select></label>
+                            <label class="kio_form_field"><span>Serial Number <b>*</b></span><input t-att-value="addAssetForm.serialNumber" t-on-input="(ev) => this.onAssetFormInput('serialNumber', ev)"/></label>
+                            <label class="kio_form_field"><span>Barcode / QR Code</span><input t-att-value="addAssetForm.barcode" t-on-input="(ev) => this.onAssetFormInput('barcode', ev)"/></label>
+                            <label class="kio_form_field"><span>Status <b>*</b></span><select t-att-value="addAssetForm.status" t-on-change="(ev) => this.onAssetFormInput('status', ev)"><option t-att-value="addAssetForm.status" t-esc="addAssetForm.status"/></select></label>
+                            <label class="kio_form_field"><span>Asset Type <b>*</b></span><select t-att-value="addAssetForm.assetType" t-on-change="(ev) => this.onAssetFormInput('assetType', ev)"><option t-att-value="addAssetForm.assetType" t-esc="addAssetForm.assetType"/></select></label>
                             <label class="kio_form_field"><span>Purchase Date <b>*</b></span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.purchaseDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('purchaseDate', ev)" t-on-change="(ev) => this.onAssetDateInput('purchaseDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
-                            <label class="kio_form_field"><span>Purchase Price (৳) <b>*</b></span><input t-att-value="addAssetForm.purchasePrice"/></label>
+                            <label class="kio_form_field"><span>Purchase Price (৳) <b>*</b></span><input t-att-value="addAssetForm.purchasePrice" t-on-input="(ev) => this.onAssetFormInput('purchasePrice', ev)"/></label>
                             <label class="kio_form_field"><span>Warranty Expiry Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.warrantyExpiry" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('warrantyExpiry', ev)" t-on-change="(ev) => this.onAssetDateInput('warrantyExpiry', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
-                            <label class="kio_form_field"><span>Condition</span><select><option t-esc="addAssetForm.condition"/></select></label>
-                            <label class="kio_form_field kio_span_4"><span>Description</span><textarea><t t-esc="addAssetForm.description"/></textarea></label>
+                            <label class="kio_form_field"><span>Condition</span><select t-att-value="addAssetForm.condition" t-on-change="(ev) => this.onAssetFormInput('condition', ev)"><option t-att-value="addAssetForm.condition" t-esc="addAssetForm.condition"/></select></label>
+                            <label class="kio_form_field kio_span_4"><span>Description</span><textarea t-att-value="addAssetForm.description" t-on-input="(ev) => this.onAssetFormInput('description', ev)"><t t-esc="addAssetForm.description"/></textarea></label>
                         </div>
                     </article>
 
@@ -68,17 +70,17 @@
                     <article class="kio_form_card">
                         <div class="kio_form_card_header"><i class="fa fa-map-marker"/><h2>Location Information</h2></div>
                         <div class="kio_form_grid kio_form_grid_2">
-                            <label class="kio_form_field"><span>Location <b>*</b></span><select><option t-esc="addAssetForm.location"/></select></label>
-                            <label class="kio_form_field"><span>Building / Floor</span><select><option t-esc="addAssetForm.buildingFloor"/></select></label>
-                            <label class="kio_form_field"><span>Room / Area</span><input t-att-value="addAssetForm.roomArea"/></label>
-                            <label class="kio_form_field"><span>Department</span><select><option t-esc="addAssetForm.department"/></select></label>
+                            <label class="kio_form_field"><span>Location <b>*</b></span><select t-att-value="addAssetForm.location" t-on-change="(ev) => this.onAssetFormInput('location', ev)"><option t-att-value="addAssetForm.location" t-esc="addAssetForm.location"/></select></label>
+                            <label class="kio_form_field"><span>Building / Floor</span><select t-att-value="addAssetForm.buildingFloor" t-on-change="(ev) => this.onAssetFormInput('buildingFloor', ev)"><option t-att-value="addAssetForm.buildingFloor" t-esc="addAssetForm.buildingFloor"/></select></label>
+                            <label class="kio_form_field"><span>Room / Area</span><input t-att-value="addAssetForm.roomArea" t-on-input="(ev) => this.onAssetFormInput('roomArea', ev)"/></label>
+                            <label class="kio_form_field"><span>Department</span><select t-att-value="addAssetForm.department" t-on-change="(ev) => this.onAssetFormInput('department', ev)"><option t-att-value="addAssetForm.department" t-esc="addAssetForm.department"/></select></label>
                         </div>
                     </article>
                     <article class="kio_form_card">
                         <div class="kio_form_card_header"><i class="fa fa-user-o"/><h2>Assignment Information</h2></div>
                         <div class="kio_form_grid kio_form_grid_2">
                             <label class="kio_form_field"><span>Assign To</span><select t-att-value="addAssetForm.assignToId || &quot;&quot;" t-on-change="onAssignToChange"><option value="" t-att-selected="!addAssetForm.assignToId">Select Employee</option><t t-foreach="employeeOptions" t-as="employee" t-key="employee.id"><option t-att-value="employee.idValue" t-att-selected="(addAssetForm.assignToId || &quot;&quot;) === employee.idValue" t-esc="employee.name"/></t></select></label>
-                            <label class="kio_form_field"><span>Employee ID</span><input t-att-value="addAssetForm.employeeId"/></label>
+                            <label class="kio_form_field"><span>Employee ID</span><input t-att-value="addAssetForm.employeeId" readonly="readonly"/></label>
                             <label class="kio_form_field"><span>Assign Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.assignDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('assignDate', ev)" t-on-change="(ev) => this.onAssetDateInput('assignDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                             <label class="kio_form_field"><span>Expected Return Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.expectedReturnDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('expectedReturnDate', ev)" t-on-change="(ev) => this.onAssetDateInput('expectedReturnDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                         </div>
@@ -86,9 +88,9 @@
                     <article class="kio_form_card">
                         <div class="kio_form_card_header"><i class="fa fa-usd"/><h2>Financial Information</h2></div>
                         <div class="kio_form_grid kio_form_grid_2">
-                            <label class="kio_form_field"><span>Depreciation Method <b>*</b></span><select><option t-esc="addAssetForm.depreciationMethod"/></select></label>
-                            <label class="kio_form_field"><span>Useful Life (Years) <b>*</b></span><input t-att-value="addAssetForm.usefulLife"/></label>
-                            <label class="kio_form_field"><span>Residual Value (৳)</span><input t-att-value="addAssetForm.residualValue"/></label>
+                            <label class="kio_form_field"><span>Depreciation Method <b>*</b></span><select t-att-value="addAssetForm.depreciationMethod" t-on-change="(ev) => this.onAssetFormInput('depreciationMethod', ev)"><option value="straight_line">Straight Line</option><option value="declining_balance">Declining Balance</option><option value="purchase_date">Purchase Date</option></select></label>
+                            <label class="kio_form_field"><span>Useful Life (Years) <b>*</b></span><input t-att-value="addAssetForm.usefulLife" t-on-input="(ev) => this.onAssetFormInput('usefulLife', ev)"/></label>
+                            <label class="kio_form_field"><span>Residual Value (৳)</span><input t-att-value="addAssetForm.residualValue" t-on-input="(ev) => this.onAssetFormInput('residualValue', ev)"/></label>
                             <label class="kio_form_field"><span>Depreciation Start Date <b>*</b></span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.depreciationStartDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('depreciationStartDate', ev)" t-on-change="(ev) => this.onAssetDateInput('depreciationStartDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                         </div>
                     </article>
@@ -97,11 +99,11 @@
                 <section class="kio_form_card kio_additional_card">
                     <div class="kio_form_card_header"><i class="fa fa-clipboard"/><h2>Additional Information</h2></div>
                     <div class="kio_form_grid kio_additional_grid">
-                        <label class="kio_form_field"><span>Supplier / Vendor</span><select><option t-esc="addAssetForm.supplier"/></select></label>
-                        <label class="kio_form_field"><span>Invoice Number</span><input t-att-value="addAssetForm.invoiceNumber"/></label>
-                        <label class="kio_form_field"><span>PO Number</span><input t-att-value="addAssetForm.poNumber"/></label>
-                        <label class="kio_form_field"><span>Tags / Notes</span><textarea><t t-esc="addAssetForm.tagsNotes"/></textarea></label>
-                        <label class="kio_active_check"><input type="checkbox" checked="checked"/> Active</label>
+                        <label class="kio_form_field"><span>Supplier / Vendor</span><select t-att-value="addAssetForm.supplier" t-on-change="(ev) => this.onAssetFormInput('supplier', ev)"><option t-att-value="addAssetForm.supplier" t-esc="addAssetForm.supplier"/></select></label>
+                        <label class="kio_form_field"><span>Invoice Number</span><input t-att-value="addAssetForm.invoiceNumber" t-on-input="(ev) => this.onAssetFormInput('invoiceNumber', ev)"/></label>
+                        <label class="kio_form_field"><span>PO Number</span><input t-att-value="addAssetForm.poNumber" t-on-input="(ev) => this.onAssetFormInput('poNumber', ev)"/></label>
+                        <label class="kio_form_field"><span>Tags / Notes</span><textarea t-att-value="addAssetForm.tagsNotes" t-on-input="(ev) => this.onAssetFormInput('tagsNotes', ev)"><t t-esc="addAssetForm.tagsNotes"/></textarea></label>
+                        <label class="kio_active_check"><input type="checkbox" t-att-checked="addAssetForm.active" t-on-change="onAssetActiveChange"/> Active</label>
                     </div>
                 </section>
             </main>

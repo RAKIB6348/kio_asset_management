@@ -21,9 +21,29 @@ class KioAssetUnit(models.Model):
     asset_code = fields.Char(required=True, copy=False, index=True)
     image_1920 = fields.Image("Asset Image", max_width=1920, max_height=1920)
     assigned_employee_id = fields.Many2one("hr.employee", string="Assigned To", index=True, ondelete="set null")
+    asset_name = fields.Char(string="Asset Name")
+    category_name = fields.Char(string="Asset Category")
+    brand_model = fields.Char(string="Brand / Model")
+    serial_number = fields.Char(string="Serial Number")
+    barcode = fields.Char(string="Barcode / QR Code")
+    status = fields.Char(string="Status")
+    asset_type = fields.Char(string="Asset Type")
+    purchase_date = fields.Date(string="Purchase Date")
+    purchase_price = fields.Monetary(string="Purchase Price", currency_field='currency_id')
     warranty_expiry_date = fields.Date(string="Warranty Expiry Date")
+    condition = fields.Char(string="Condition")
+    description = fields.Text(string="Description")
+    location = fields.Char(string="Location")
+    building_floor = fields.Char(string="Building / Floor")
+    room_area = fields.Char(string="Room / Area")
+    department_name = fields.Char(string="Department")
     assign_date = fields.Date(string="Assign Date")
     expected_return_date = fields.Date(string="Expected Return Date")
+    supplier = fields.Char(string="Supplier / Vendor")
+    invoice_number = fields.Char(string="Invoice Number")
+    po_number = fields.Char(string="PO Number")
+    tags_notes = fields.Text(string="Tags / Notes")
+    active = fields.Boolean(default=True)
     depreciation_method = fields.Selection([
         ('straight_line', 'Straight Line'),
         ('declining_balance', 'Declining Balance'),
@@ -188,7 +208,7 @@ class KioAssetDashboardService(models.AbstractModel):
         }
 
     def _sync_asset_units(self, rows):
-        unit_model = self.env['kio.asset.unit'].sudo()
+        unit_model = self.env['kio.asset.unit'].sudo().with_context(active_test=False)
         sequence = self.env['ir.sequence'].sudo()
         for row in reversed(rows):
             product_id = row.get('productId') or row.get('id')
@@ -213,7 +233,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _expand_rows_by_quantity(self, rows):
         expanded = []
-        unit_model = self.env['kio.asset.unit'].sudo()
+        unit_model = self.env['kio.asset.unit'].sudo().with_context(active_test=False)
         for row in rows:
             quantity = row.get('quantity') or 1
             if quantity < 1:
@@ -228,6 +248,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 asset_code = unit.asset_code
                 employee = unit.assigned_employee_id
                 expanded_row = dict(row)
+                display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
                 expanded_row.update({
                     'id': unit.id,
                     'productId': product_id,
@@ -236,11 +257,35 @@ class KioAssetDashboardService(models.AbstractModel):
                     'assignedToId': employee.id if employee else False,
                     'assignedMeta': employee.department_id.name if employee and employee.department_id else '',
                     'employeeCode': (employee.identification_id or employee.barcode or '-') if employee else '-',
+                    'name': unit.asset_name or row.get('name'),
+                    'category': unit.category_name or row.get('category'),
+                    'brand': unit.brand_model or row.get('brand'),
+                    'serial': unit.serial_number or row.get('serial'),
+                    'barcode': unit.barcode or unit.serial_number or row.get('serial'),
+                    'assetType': unit.asset_type or 'Tangible',
+                    'purchaseDate': self._format_date(unit.purchase_date) if unit.purchase_date else row.get('purchaseDate'),
+                    'price': self._format_money(unit.purchase_price) if unit.purchase_price else row.get('price'),
+                    'unitPrice': unit.purchase_price if unit.purchase_price else row.get('unitPrice'),
                     'warrantyExpiry': self._format_date(unit.warranty_expiry_date),
+                    'condition': unit.condition or ('Used' if display_status == 'Retired' else 'New'),
+                    'description': unit.description or row.get('name'),
+                    'location': unit.location or row.get('location'),
+                    'locationMeta': unit.department_name or row.get('locationMeta'),
+                    'buildingFloor': unit.building_floor or '-',
+                    'roomArea': unit.room_area or '-',
+                    'department': unit.department_name or '',
                     'assignDate': self._format_date(unit.assign_date),
                     'expectedReturnDate': self._format_date(unit.expected_return_date),
+                    'supplier': unit.supplier or row.get('vendor') or '',
+                    'invoiceNumber': unit.invoice_number or row.get('invoiceNumber') or '',
+                    'poNumber': unit.po_number or row.get('poNumber') or '',
+                    'tagsNotes': unit.tags_notes or '',
+                    'active': bool(unit.active),
+                    'depreciationMethod': unit.depreciation_method or 'straight_line',
+                    'usefulLife': unit.useful_life_years or 3,
+                    'residualValue': unit.residual_value or 0.0,
                     'depreciationStartDate': self._format_date(unit.depreciation_start_date),
-                    'status': 'Assigned' if employee else row.get('status', 'Available'),
+                    'status': display_status,
                     'tone': 'blue' if employee else row.get('tone', 'green'),
                     'code': asset_code,
                     'rowKey': '%s-%s' % (asset_code, index),
@@ -275,7 +320,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def update_asset_image(self, asset_id, image_1920):
-        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
         if not unit.exists() or not image_1920:
             return False
 
@@ -302,7 +347,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def update_asset_assignment(self, asset_id, employee_id=False, values=None):
-        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
         if not unit.exists():
             return False
         employee_id = int(employee_id) if employee_id else False
@@ -326,25 +371,26 @@ class KioAssetDashboardService(models.AbstractModel):
         purchase_map = self._get_purchase_financials(products)
         base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products]
         self._sync_asset_units(base_rows)
-        return self.env['kio.asset.unit'].sudo().action_resequence_asset_codes()
+        return self.env['kio.asset.unit'].sudo().with_context(active_test=False).action_resequence_asset_codes()
 
     def _row_to_details(self, row):
         return {
             'code': row['code'],
             'listCode': row['code'],
             'name': row['name'],
-            'activeState': 'Active',
+            'activeState': 'Active' if row.get('active', True) else 'Inactive',
+            'active': row.get('active', True),
             'serial': row['serial'],
             'category': row['category'],
             'brand': row['brand'],
-            'assetType': 'Tangible',
+            'assetType': row.get('assetType') or 'Tangible',
             'status': row['status'],
             'statusTone': row['tone'],
-            'barcode': row['serial'],
-            'condition': 'New',
-            'description': row['name'],
-            'tagsNotes': '',
-            'supplier': row.get('vendor') or '-',
+            'barcode': row.get('barcode') or row['serial'],
+            'condition': row.get('condition') or 'New',
+            'description': row.get('description') or row['name'],
+            'tagsNotes': row.get('tagsNotes') or '',
+            'supplier': row.get('supplier') or row.get('vendor') or '-',
             'invoiceNumber': row.get('invoiceNumber') or '-',
             'poNumber': row.get('poNumber') or '-',
             'purchaseDate': row['purchaseDate'],
@@ -356,10 +402,13 @@ class KioAssetDashboardService(models.AbstractModel):
             'accumulatedDepreciation': self._format_money(0.0),
             'warrantyExpiry': row.get('warrantyExpiry') or '-',
             'expectedReturn': row.get('expectedReturnDate') or '-',
-            'usefulLife': '-',
+            'usefulLife': row.get('usefulLife') or '-',
+            'depreciationMethod': row.get('depreciationMethod') or 'straight_line',
+            'residualValue': row.get('residualValue') or 0.0,
+            'depreciationStartDate': row.get('depreciationStartDate') or '-',
             'invoiceFile': row.get('invoiceNumber') or '-',
             'assignment': {'assignedTo': row['assignedTo'], 'assignedToId': row.get('assignedToId') or False, 'department': row['assignedMeta'], 'employeeId': row.get('employeeCode') or '-', 'assignDate': row.get('assignDate') or '-', 'expectedReturn': row.get('expectedReturnDate') or '-'},
-            'location': {'location': row['location'], 'buildingFloor': '-', 'roomArea': '-', 'department': row['locationMeta']},
+            'location': {'location': row['location'], 'buildingFloor': row.get('buildingFloor') or '-', 'roomArea': row.get('roomArea') or '-', 'department': row.get('department') or row['locationMeta']},
             'maintenanceRows': [],
         }
 
@@ -452,7 +501,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 'emptyMessage': 'No asset records are available for depreciation.',
             }
 
-        unit = self.env['kio.asset.unit'].sudo().browse(selected['id'])
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(selected['id'])
         product = unit.product_id
         purchase_value = selected.get('unitPrice') or 0.0
         useful_life = max(unit.useful_life_years or 0, 1)
@@ -558,7 +607,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def create_depreciation_journal_entries(self, asset_id):
-        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
 
@@ -575,7 +624,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def run_asset_depreciation(self, asset_id):
-        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
 
@@ -592,7 +641,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def update_depreciation_automation(self, asset_id, values):
-        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
 
@@ -617,7 +666,7 @@ class KioAssetDashboardService(models.AbstractModel):
     @api.model
     def cron_post_due_depreciation_entries(self):
         today = fields.Date.context_today(self)
-        units = self.env['kio.asset.unit'].sudo().search([('auto_create_journal_entries', '=', True)])
+        units = self.env['kio.asset.unit'].sudo().with_context(active_test=False).search([('auto_create_journal_entries', '=', True)])
         for unit in units:
             journal = self._depreciation_journal(unit)
             if not journal:
@@ -644,7 +693,7 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def update_depreciation_summary(self, asset_id, values):
-        unit = self.env['kio.asset.unit'].sudo().browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
         if not unit.exists():
             return {'success': False, 'errors': {'asset': 'The selected asset no longer exists.'}}
 

@@ -839,6 +839,8 @@ class KioAssetDashboardService(models.AbstractModel):
                 }),
             ],
         }
+        if 'bill_tag' in self.env['account.move']._fields:
+            vals['bill_tag'] = 'vendor'
         return self.env['account.move'].sudo().create(vals)
 
     def _elapsed_depreciation_time(self, start_date):

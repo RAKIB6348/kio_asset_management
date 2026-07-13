@@ -129,7 +129,7 @@
                         </table>
                     </div>
                     <div class="kio_asset_pagination">
-                        <div class="kio_page_size">Show <select t-on-change="onAssetPageSizeChange"><option>10</option><option>25</option><option>50</option><option>100</option><option>200</option><option>500</option></select> per page</div>
+                        <div class="kio_page_size">Show <select t-att-value="state.assetPageSize" t-on-change="onAssetPageSizeChange"><option>10</option><option>25</option><option>50</option><option>100</option><option>200</option><option>500</option></select> per page</div>
                         <div class="kio_page_numbers">
                             <button type="button" t-on-click="previousAssetPage"><i class="fa fa-angle-left"/></button>
                             <button t-att-class="state.assetPage === 1 ? 'is_active' : ''" type="button" t-on-click="() => this.setAssetPage(1)">1</button>

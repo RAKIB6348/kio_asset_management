@@ -2,10 +2,24 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
-import { useService } from "@web/core/utils/hooks";
+import { useBus, useService } from "@web/core/utils/hooks";
 import { assetListKpis, assetRows } from "./asset_list_data";
 import { addAssetFormState } from "./add_asset_data";
 import { buildAssetDetails } from "./asset_details_data";
+
+const ROUTE_KEYS = {
+    page: "kio_asset_page",
+    previousPage: "kio_asset_previous_page",
+    selectedAssetId: "kio_asset_id",
+    assetSearch: "kio_asset_search",
+    assetPage: "kio_asset_page_no",
+    assetPageSize: "kio_asset_page_size",
+    assetFormMode: "kio_asset_form_mode",
+    editingAssetId: "kio_asset_editing_id",
+};
+
+const VALID_PAGES = new Set(["dashboard", "asset_list", "asset_details", "add_asset"]);
+const VALID_FORM_MODES = new Set(["create", "edit"]);
 
 export class AssetDashboard extends Component {
     static template = "kio_asset_management.AssetDashboard";
@@ -13,9 +27,21 @@ export class AssetDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
+        this.router = useService("router");
         const context = (this.props.action && this.props.action.context) || {};
-        const initialPage = context.page || "dashboard";
-        this.state = useState({ page: initialPage, previousPage: initialPage, loaded: false, assetSearch: "", assetPage: 1, assetPageSize: 10, assetFormMode: "create", editingAssetId: false, imageVersion: 0 });
+        const initialRouteState = this.getRouteState(context);
+        this.state = useState({
+            page: initialRouteState.page,
+            previousPage: initialRouteState.previousPage,
+            loaded: false,
+            assetSearch: initialRouteState.assetSearch,
+            assetPage: initialRouteState.assetPage,
+            assetPageSize: initialRouteState.assetPageSize,
+            assetFormMode: initialRouteState.assetFormMode,
+            editingAssetId: initialRouteState.editingAssetId,
+            selectedAssetId: initialRouteState.selectedAssetId,
+            imageVersion: 0,
+        });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
         this.addAssetForm = addAssetFormState;
@@ -83,6 +109,118 @@ export class AssetDashboard extends Component {
         this.assetDetailsByCode = {};
         this.employeeOptions = [];
         onWillStart(async () => this.loadDynamicAssetData());
+        useBus(this.env.bus, "ROUTE_CHANGE", () => this.restoreRouteState());
+        this.updateRoute({ replace: true });
+    }
+
+    getRouteState(context = {}) {
+        const hash = (this.router && this.router.current && this.router.current.hash) || {};
+        const page = this.sanitizePage(hash[ROUTE_KEYS.page] || context.page);
+        const previousPage = this.sanitizePage(hash[ROUTE_KEYS.previousPage] || context.previous_page || page);
+        return {
+            page,
+            previousPage,
+            selectedAssetId: this.parsePositiveNumber(hash[ROUTE_KEYS.selectedAssetId] || context.asset_id),
+            assetSearch: hash[ROUTE_KEYS.assetSearch] || "",
+            assetPage: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPage]) || 1,
+            assetPageSize: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPageSize]) || 10,
+            assetFormMode: this.sanitizeFormMode(hash[ROUTE_KEYS.assetFormMode]),
+            editingAssetId: this.parsePositiveNumber(hash[ROUTE_KEYS.editingAssetId]) || false,
+        };
+    }
+
+    sanitizePage(page) {
+        return VALID_PAGES.has(page) ? page : "dashboard";
+    }
+
+    sanitizeFormMode(mode) {
+        return VALID_FORM_MODES.has(mode) ? mode : "create";
+    }
+
+    parsePositiveNumber(value) {
+        const number = Number(value);
+        return Number.isFinite(number) && number > 0 ? number : false;
+    }
+
+    routeHashForState() {
+        const isDetails = this.state.page === "asset_details";
+        const isEdit = this.state.page === "add_asset" && this.state.assetFormMode === "edit";
+        return {
+            [ROUTE_KEYS.page]: this.state.page === "dashboard" ? undefined : this.state.page,
+            [ROUTE_KEYS.previousPage]: this.state.previousPage && this.state.previousPage !== this.state.page ? this.state.previousPage : undefined,
+            [ROUTE_KEYS.selectedAssetId]: (isDetails || isEdit) && this.state.selectedAssetId ? this.state.selectedAssetId : undefined,
+            [ROUTE_KEYS.assetSearch]: this.state.assetSearch || undefined,
+            [ROUTE_KEYS.assetPage]: this.state.assetPage > 1 ? this.state.assetPage : undefined,
+            [ROUTE_KEYS.assetPageSize]: this.state.assetPageSize !== 10 ? this.state.assetPageSize : undefined,
+            [ROUTE_KEYS.assetFormMode]: this.state.page === "add_asset" ? this.state.assetFormMode : undefined,
+            [ROUTE_KEYS.editingAssetId]: isEdit && this.state.editingAssetId ? this.state.editingAssetId : undefined,
+        };
+    }
+
+    updateRoute(options = {}) {
+        this.router.pushState(this.routeHashForState(), { replace: Boolean(options.replace) });
+    }
+
+    restoreRouteState() {
+        const routeState = this.getRouteState((this.props.action && this.props.action.context) || {});
+        this.state.page = routeState.page;
+        this.state.previousPage = routeState.previousPage;
+        this.state.assetSearch = routeState.assetSearch;
+        this.state.assetPage = routeState.assetPage;
+        this.state.assetPageSize = routeState.assetPageSize;
+        this.state.assetFormMode = routeState.assetFormMode;
+        this.state.editingAssetId = routeState.editingAssetId;
+        this.state.selectedAssetId = routeState.selectedAssetId;
+        this.restoreSelectedAsset();
+        this.restoreAssetForm();
+    }
+
+    restoreSelectedAsset() {
+        if (!this.assetRows.length) {
+            return;
+        }
+        const selectedRow = this.state.selectedAssetId
+            ? this.assetRows.find((row) => row.id === this.state.selectedAssetId)
+            : this.assetRows[0];
+        if (selectedRow) {
+            this.selectedAsset = buildAssetDetails(selectedRow);
+        }
+    }
+
+    restoreAssetForm() {
+        if (this.state.page !== "add_asset" || this.state.assetFormMode !== "edit" || !this.state.editingAssetId) {
+            return;
+        }
+        const row = this.assetRows.find((asset) => asset.id === this.state.editingAssetId);
+        if (row) {
+            this.fillAssetFormFromRow(row);
+        }
+    }
+
+    fillAssetFormFromRow(row) {
+        Object.assign(this.addAssetForm, {
+            assetCode: row.code,
+            assetName: row.name,
+            category: row.category,
+            brandModel: row.brand,
+            serialNumber: row.serial,
+            barcode: row.serial,
+            status: row.status,
+            assetType: "Tangible",
+            purchaseDate: row.purchaseDate,
+            purchasePrice: row.price,
+            supplier: row.vendor || "",
+            invoiceNumber: row.invoiceNumber || "",
+            poNumber: row.poNumber || "",
+            location: row.location,
+            department: row.locationMeta || "",
+            assignTo: row.assignedTo,
+            assignToId: row.assignedToId ? String(row.assignedToId) : "",
+            employeeId: row.employeeCode || "-",
+            imagePreviewUrl: row.imageUrl || "",
+            imageBinary: false,
+            imageChanged: false,
+        });
     }
 
     async loadDynamicAssetData() {
@@ -103,9 +241,8 @@ export class AssetDashboard extends Component {
                 this.locations = data.locations || this.locations;
                 this.depreciationSummary = data.depreciationSummary || this.depreciationSummary;
                 this.assignedAssets = data.assignedAssets || this.assignedAssets;
-                const selectedCode = this.selectedAsset && this.selectedAsset.code;
-                const selectedRow = this.assetRows.find((row) => row.code === selectedCode) || this.assetRows[0];
-                this.selectedAsset = buildAssetDetails(selectedRow);
+                this.restoreSelectedAsset();
+                this.restoreAssetForm();
             }
         } catch (error) {
             console.warn("Asset dashboard dynamic data fallback", error);
@@ -150,10 +287,12 @@ export class AssetDashboard extends Component {
     onAssetSearch(event) {
         this.state.assetSearch = event.target.value;
         this.state.assetPage = 1;
+        this.updateRoute({ replace: true });
     }
 
     setAssetPage(page) {
         this.state.assetPage = Math.min(Math.max(page, 1), this.assetPageCount);
+        this.updateRoute({ replace: true });
     }
 
     nextAssetPage() {
@@ -167,11 +306,14 @@ export class AssetDashboard extends Component {
     onAssetPageSizeChange(event) {
         this.state.assetPageSize = Number(event.target.value) || 10;
         this.state.assetPage = 1;
+        this.updateRoute({ replace: true });
     }
 
     handleKpiClick(kpi) {
         if (kpi.page === "asset_list") {
             this.state.page = "asset_list";
+            this.state.previousPage = "dashboard";
+            this.updateRoute();
         }
     }
 
@@ -191,6 +333,7 @@ export class AssetDashboard extends Component {
             imageChanged: false,
         });
         this.state.page = "add_asset";
+        this.updateRoute();
     }
 
     openEditAsset(assetId) {
@@ -202,44 +345,32 @@ export class AssetDashboard extends Component {
         this.state.previousPage = "asset_list";
         this.state.assetFormMode = "edit";
         this.state.editingAssetId = assetId;
-        Object.assign(this.addAssetForm, {
-            assetCode: row.code,
-            assetName: row.name,
-            category: row.category,
-            brandModel: row.brand,
-            serialNumber: row.serial,
-            barcode: row.serial,
-            status: row.status,
-            assetType: "Tangible",
-            purchaseDate: row.purchaseDate,
-            purchasePrice: row.price,
-            supplier: row.vendor || "",
-            invoiceNumber: row.invoiceNumber || "",
-            poNumber: row.poNumber || "",
-            location: row.location,
-            department: row.locationMeta || "",
-            assignTo: row.assignedTo,
-            assignToId: row.assignedToId ? String(row.assignedToId) : "",
-            employeeId: row.employeeCode || "-",
-            imagePreviewUrl: row.imageUrl || "",
-            imageBinary: false,
-            imageChanged: false,
-        });
+        this.state.selectedAssetId = assetId;
+        this.fillAssetFormFromRow(row);
         this.state.page = "add_asset";
+        this.updateRoute();
     }
 
     openAssetDetails(row) {
         this.selectedAsset = buildAssetDetails(row);
+        this.state.selectedAssetId = row.id || false;
         this.state.previousPage = "asset_list";
         this.state.page = "asset_details";
+        this.updateRoute();
     }
 
     backToAssetList() {
         this.state.page = "asset_list";
+        this.state.previousPage = "dashboard";
+        this.state.selectedAssetId = false;
+        this.updateRoute();
     }
 
     closeAddAsset() {
         this.state.page = this.state.previousPage || "dashboard";
+        this.state.assetFormMode = "create";
+        this.state.editingAssetId = false;
+        this.updateRoute();
     }
 
     async saveAsset() {
@@ -293,6 +424,7 @@ export class AssetDashboard extends Component {
         console.info("Edit Asset", this.selectedAsset);
         this.state.assetFormMode = "edit";
         this.state.editingAssetId = this.selectedAsset.id || false;
+        this.state.selectedAssetId = this.selectedAsset.id || false;
         Object.assign(this.addAssetForm, {
             assetCode: this.selectedAsset.code,
             assetName: this.selectedAsset.name,
@@ -326,6 +458,7 @@ export class AssetDashboard extends Component {
         });
         this.state.previousPage = this.state.page;
         this.state.page = "add_asset";
+        this.updateRoute();
     }
 
     assignAsset() {
@@ -367,6 +500,11 @@ export class AssetDashboard extends Component {
 
     openDashboard() {
         this.state.page = "dashboard";
+        this.state.previousPage = "dashboard";
+        this.state.selectedAssetId = false;
+        this.state.assetFormMode = "create";
+        this.state.editingAssetId = false;
+        this.updateRoute();
     }
 }
 

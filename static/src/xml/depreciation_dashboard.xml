@@ -146,7 +146,7 @@
                     </section>
 
                     <section class="kio_depr_card kio_depr_schedule_card">
-                        <div class="kio_depr_card_header"><h2>Depreciation Schedule</h2><div><button type="button"><i class="fa fa-magic"/> Generate Schedule</button><button type="button" aria-label="Download"><i class="fa fa-download"/></button></div></div>
+                        <div class="kio_depr_card_header"><h2>Depreciation Schedule</h2><div><button type="button" t-on-click="createJournalEntries"><i class="fa fa-magic"/> Generate Schedule</button><button type="button" aria-label="Download"><i class="fa fa-download"/></button></div></div>
                         <div class="kio_depr_table_wrap">
                             <table class="kio_depr_table">
                                 <thead><tr><th>#</th><th>Period</th><th>From Date</th><th>To Date</th><th>Days</th><th>Opening Book Value</th><th>Depreciation Amount</th><th>Accumulated Depreciation</th><th>Closing Book Value</th><th>Status</th><th>Journal Entry</th><th>Actions</th></tr></thead>

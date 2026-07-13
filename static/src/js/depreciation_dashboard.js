@@ -110,20 +110,33 @@ export class DepreciationDashboard extends Component {
         this.state.data.filters.toDate = event.target.value;
     }
 
-    onAutoCreateChange(event) {
+    async onAutoCreateChange(event) {
         this.state.data.automation.autoCreate = event.target.checked;
+        await this.saveAutomationSettings();
     }
 
-    onCreateJournalChange(event) {
+    async onCreateJournalChange(event) {
         this.state.data.automation.createJournal = event.target.value;
+        await this.saveAutomationSettings();
     }
 
     onNextRunDateChange(event) {
         this.state.data.automation.nextRunDate = event.target.value;
     }
 
-    onJournalChange(event) {
+    async onJournalChange(event) {
         this.state.data.automation.journalId = Number(event.target.value) || false;
+        await this.saveAutomationSettings();
+    }
+
+    async saveAutomationSettings() {
+        const automation = this.state.data.automation || {};
+        const result = await this.orm.call("kio.asset.dashboard.service", "update_depreciation_automation", [this.state.selectedAssetId || false, {
+            autoCreate: automation.autoCreate,
+            createJournal: automation.createJournal,
+            journalId: automation.journalId || false,
+        }]);
+        this.applyDashboardResult(result);
     }
 
     applyDashboardResult(result, fallbackMessage = "") {

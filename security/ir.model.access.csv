@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_kio_asset_unit_user,kio.asset.unit user,model_kio_asset_unit,base.group_user,1,1,1,0
+access_kio_asset_location_user,kio.asset.location user,model_kio_asset_location,base.group_user,1,0,0,0
+access_kio_asset_location_admin,kio.asset.location admin,model_kio_asset_location,base.group_system,1,1,1,1

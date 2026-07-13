@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_kio_asset_location_tree" model="ir.ui.view">
+            <field name="name">kio.asset.location.tree</field>
+            <field name="model">kio.asset.location</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="parent_id"/>
+                    <field name="company_id"/>
+                    <field name="active"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_kio_asset_location_form" model="ir.ui.view">
+            <field name="name">kio.asset.location.form</field>
+            <field name="model">kio.asset.location</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group string="General Information">
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="parent_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="description"/>
+                            <field name="active"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_kio_asset_location_search" model="ir.ui.view">
+            <field name="name">kio.asset.location.search</field>
+            <field name="model">kio.asset.location</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                    <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Parent Location" name="group_parent" context="{'group_by': 'parent_id'}"/>
+                        <filter string="Company" name="group_company" context="{'group_by': 'company_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_kio_asset_location" model="ir.actions.act_window">
+            <field name="name">Locations</field>
+            <field name="res_model">kio.asset.location</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="view_kio_asset_location_search"/>
+            <field name="context">{'active_test': False}</field>
+        </record>
+
+        <menuitem id="menu_asset_management_configuration"
+                  name="Configuration"
+                  parent="menu_asset_management_root"
+                  sequence="90"/>
+
+        <menuitem id="menu_asset_management_locations"
+                  name="Locations"
+                  parent="menu_asset_management_configuration"
+                  action="action_kio_asset_location"
+                  sequence="10"/>
+    </data>
+</odoo>

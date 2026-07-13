@@ -46,6 +46,7 @@ export function buildAssetDetails(row = {}) {
         },
         location: {
             location: row.location || "-",
+            locationId: row.locationId || false,
             buildingFloor: row.buildingFloor || "-",
             roomArea: row.roomArea || "-",
             department: row.department || row.locationMeta || "-",

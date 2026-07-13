@@ -15,6 +15,7 @@ export const addAssetFormState = {
     condition: "",
     description: "",
     location: "",
+    locationId: "",
     buildingFloor: "",
     roomArea: "",
     department: "",

@@ -115,6 +115,7 @@ export class AssetDashboard extends Component {
         ];
         this.assetDetailsByCode = {};
         this.employeeOptions = [];
+        this.locationOptions = [];
         onWillStart(async () => this.loadDynamicAssetData());
         useBus(this.env.bus, "ROUTE_CHANGE", () => this.restoreRouteState());
         this.updateRoute({ replace: true });
@@ -226,6 +227,7 @@ export class AssetDashboard extends Component {
             invoiceNumber: row.invoiceNumber || "",
             poNumber: row.poNumber || "",
             location: row.location,
+            locationId: row.locationId ? String(row.locationId) : "",
             buildingFloor: row.buildingFloor || "",
             roomArea: row.roomArea || "",
             department: row.department || row.locationMeta || "",
@@ -249,6 +251,10 @@ export class AssetDashboard extends Component {
                 this.employeeOptions = (data.employeeOptions || this.employeeOptions).map((employee) => ({
                     ...employee,
                     idValue: `${employee.id}`,
+                }));
+                this.locationOptions = (data.locationOptions || this.locationOptions).map((location) => ({
+                    ...location,
+                    idValue: `${location.id}`,
                 }));
             }
             if (data) {
@@ -489,6 +495,13 @@ export class AssetDashboard extends Component {
         this.addAssetForm.active = Boolean(event.target.checked);
     }
 
+    onAssetLocationChange(event) {
+        const locationId = event.target.value || "";
+        const location = this.locationOptions.find((item) => item.idValue === locationId);
+        this.addAssetForm.locationId = locationId;
+        this.addAssetForm.location = location ? location.name : "";
+    }
+
     onAssetDateInput(fieldName, event) {
         if (!ASSET_DATE_FIELDS.has(fieldName)) {
             return;
@@ -527,6 +540,7 @@ export class AssetDashboard extends Component {
             warranty_expiry_date: this.normalizeDateInput(this.addAssetForm.warrantyExpiry) || false,
             condition: this.optionalText(this.addAssetForm.condition),
             description: this.optionalText(this.addAssetForm.description),
+            location_id: this.addAssetForm.locationId ? Number(this.addAssetForm.locationId) : false,
             location: this.optionalText(this.addAssetForm.location),
             building_floor: this.optionalText(this.addAssetForm.buildingFloor),
             room_area: this.optionalText(this.addAssetForm.roomArea),
@@ -598,6 +612,7 @@ export class AssetDashboard extends Component {
             condition: "",
             description: "",
             location: "",
+            locationId: "",
             buildingFloor: "",
             roomArea: "",
             department: "",
@@ -658,6 +673,7 @@ export class AssetDashboard extends Component {
             condition: this.selectedAsset.condition,
             description: this.selectedAsset.description,
             location: this.selectedAsset.location.location,
+            locationId: this.selectedAsset.location.locationId ? String(this.selectedAsset.location.locationId) : "",
             buildingFloor: this.selectedAsset.location.buildingFloor,
             roomArea: this.selectedAsset.location.roomArea,
             department: this.selectedAsset.location.department,

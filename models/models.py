@@ -10,6 +10,29 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
+class KioAssetLocation(models.Model):
+    _name = 'kio.asset.location'
+    _description = 'KIO Asset Location'
+    _order = 'name asc, id asc'
+
+    name = fields.Char(required=True, index=True)
+    code = fields.Char(index=True)
+    description = fields.Text()
+    active = fields.Boolean(default=True)
+    parent_id = fields.Many2one('kio.asset.location', string='Parent Location', index=True, ondelete='restrict')
+    company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.company, index=True)
+
+    _sql_constraints = [
+        ('name_unique', 'unique(name)', 'Location name must be unique.'),
+        ('code_unique', 'unique(code)', 'Location code must be unique.'),
+    ]
+
+    @api.constrains('parent_id')
+    def _check_parent_recursion(self):
+        if not self._check_recursion():
+            raise ValidationError('You cannot create recursive asset locations.')
+
+
 class KioAssetUnit(models.Model):
     _name = 'kio.asset.unit'
     _description = 'KIO Asset Unit'
@@ -33,7 +56,8 @@ class KioAssetUnit(models.Model):
     warranty_expiry_date = fields.Date(string="Warranty Expiry Date")
     condition = fields.Char(string="Condition")
     description = fields.Text(string="Description")
-    location = fields.Char(string="Location")
+    location = fields.Char(string="Legacy Location")
+    location_id = fields.Many2one('kio.asset.location', string="Location", index=True, ondelete='set null')
     building_floor = fields.Char(string="Building / Floor")
     room_area = fields.Char(string="Room / Area")
     department_name = fields.Char(string="Department")
@@ -127,11 +151,20 @@ class KioAssetDashboardService(models.AbstractModel):
             'depreciationSummary': self._depreciation_summary(total_assets, purchase_value, depreciation_value, current_value),
             'assignedAssets': self._recent_assigned_assets(rows),
             'employeeOptions': self._employee_options(),
+            'locationOptions': self._location_options(),
         }
 
     def _employee_options(self):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)], order='name asc')
         return [{'id': employee.id, 'name': employee.name, 'employeeCode': employee.identification_id or employee.barcode or '-'} for employee in employees]
+
+    def _location_options(self):
+        company = self.env.company
+        locations = self.env['kio.asset.location'].sudo().search([
+            ('active', '=', True),
+            ('company_id', 'in', [company.id, False]),
+        ], order='name asc')
+        return [{'id': location.id, 'name': location.display_name, 'code': location.code or '', 'parentId': location.parent_id.id or False, 'companyId': location.company_id.id or False} for location in locations]
 
     def _get_asset_products(self):
         category = self.env['product.category'].search([('name', '=', 'Asset Category')], limit=1)
@@ -247,8 +280,10 @@ class KioAssetDashboardService(models.AbstractModel):
                 unit = units_by_index.get(index)
                 if not unit:
                     continue
+                self._migrate_unit_location(unit)
                 asset_code = unit.asset_code
                 employee = unit.assigned_employee_id
+                location = unit.location_id
                 expanded_row = dict(row)
                 display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
                 expanded_row.update({
@@ -271,8 +306,10 @@ class KioAssetDashboardService(models.AbstractModel):
                     'warrantyExpiry': self._format_date(unit.warranty_expiry_date),
                     'condition': unit.condition or ('Used' if display_status == 'Retired' else 'New'),
                     'description': unit.description or row.get('name'),
-                    'location': unit.location or row.get('location'),
-                    'locationMeta': unit.department_name or row.get('locationMeta'),
+                    'location': location.display_name if location else (unit.location or row.get('location')),
+                    'locationId': location.id if location else False,
+                    'locationCode': location.code if location else '',
+                    'locationMeta': unit.department_name or (location.parent_id.display_name if location and location.parent_id else row.get('locationMeta')),
                     'buildingFloor': unit.building_floor or '-',
                     'roomArea': unit.room_area or '-',
                     'department': unit.department_name or '',
@@ -297,6 +334,21 @@ class KioAssetDashboardService(models.AbstractModel):
                 })
                 expanded.append(expanded_row)
         return expanded
+
+    def _migrate_unit_location(self, unit):
+        if unit.location_id or not unit.location or unit.location == '-':
+            return
+        location_name = unit.location.strip()
+        if not location_name:
+            return
+        Location = self.env['kio.asset.location'].sudo().with_context(active_test=False)
+        location = Location.search([('name', '=', location_name)], limit=1)
+        if not location:
+            location = Location.create({
+                'name': location_name,
+                'company_id': unit.company_id.id if unit.company_id else self.env.company.id,
+            })
+        unit.location_id = location.id
 
     def _asset_row_image_url(self, unit):
         if unit.image_1920:

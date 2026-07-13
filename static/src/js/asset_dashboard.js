@@ -45,16 +45,16 @@ export class AssetDashboard extends Component {
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
         this.addAssetForm = addAssetFormState;
-        this.selectedAsset = buildAssetDetails(assetRows[0]);
+        this.selectedAsset = buildAssetDetails();
         this.kpis = [
-            { title: "Total Assets", value: "1,248", meta: "View all assets", icon: "fa-cube", tone: "blue", action: true, page: "asset_list" },
-            { title: "Active Assets", value: "1,089", meta: "87.25% of total", icon: "fa-check", tone: "green" },
-            { title: "Assigned Assets", value: "842", meta: "67.63% of total", icon: "fa-user", tone: "orange" },
-            { title: "Under Maintenance", value: "52", meta: "4.17% of total", icon: "fa-clock-o", tone: "purple" },
-            { title: "Unassigned Assets", value: "247", meta: "19.79% of total", icon: "fa-ban", tone: "red" },
-            { title: "Depreciated Value", value: "৳ 8.45M", meta: "View depreciation", icon: "fa-money", tone: "teal", action: true },
-            { title: "Asset Purchase Value", value: "৳ 24.35M", meta: "View details", icon: "fa-database", tone: "violet", action: true },
-            { title: "Current Asset Value", value: "৳ 15.90M", meta: "View details", icon: "fa-line-chart", tone: "lime", action: true },
+            { title: "Total Assets", value: "0", meta: "View all assets", icon: "fa-cube", tone: "blue", action: true, page: "asset_list" },
+            { title: "Active Assets", value: "0", meta: "0.00% of total", icon: "fa-check", tone: "green" },
+            { title: "Assigned Assets", value: "0", meta: "0.00% of total", icon: "fa-user", tone: "orange" },
+            { title: "Under Maintenance", value: "0", meta: "0.00% of total", icon: "fa-clock-o", tone: "purple" },
+            { title: "Unassigned Assets", value: "0", meta: "0.00% of total", icon: "fa-ban", tone: "red" },
+            { title: "Depreciated Value", value: "0.00", meta: "View depreciation", icon: "fa-money", tone: "teal", action: true },
+            { title: "Asset Purchase Value", value: "0.00", meta: "View details", icon: "fa-database", tone: "violet", action: true },
+            { title: "Current Asset Value", value: "0.00", meta: "View details", icon: "fa-line-chart", tone: "lime", action: true },
         ];
         this.actions = [
             { label: "Add Asset", icon: "fa-plus", tone: "blue", page: "add_asset" },
@@ -63,48 +63,24 @@ export class AssetDashboard extends Component {
             { label: "View Reports", icon: "fa-bar-chart", tone: "purple" },
         ];
         this.statuses = [
-            { label: "Active", value: "1,089", percent: "87.25%", tone: "green" },
-            { label: "Assigned", value: "842", percent: "67.63%", tone: "blue" },
-            { label: "Under Maintenance", value: "52", percent: "4.17%", tone: "orange" },
-            { label: "Unassigned", value: "247", percent: "19.79%", tone: "purple" },
-            { label: "Retired", value: "16", percent: "1.28%", tone: "red" },
-            { label: "Scrapped", value: "2", percent: "0.16%", tone: "slate" },
+            { label: "Active", value: "0", percent: "0.00%", tone: "green" },
+            { label: "Assigned", value: "0", percent: "0.00%", tone: "blue" },
+            { label: "Under Maintenance", value: "0", percent: "0.00%", tone: "orange" },
+            { label: "Unassigned", value: "0", percent: "0.00%", tone: "purple" },
+            { label: "Retired", value: "0", percent: "0.00%", tone: "red" },
+            { label: "Scrapped", value: "0", percent: "0.00%", tone: "slate" },
         ];
-        this.locations = [
-            { label: "Head Office", value: 420, tone: "blue" },
-            { label: "Chattogram Branch", value: 210, tone: "teal" },
-            { label: "Sylhet Branch", value: 165, tone: "amber" },
-            { label: "Khulna Branch", value: 125, tone: "purple" },
-            { label: "Warehouse", value: 85, tone: "red" },
-        ];
-        this.maintenanceCounts = [
-            { label: "New Request", value: 12, tone: "purple" },
-            { label: "In Progress", value: 18, tone: "blue" },
-            { label: "Waiting Parts", value: 7, tone: "orange" },
-            { label: "Completed", value: 45, tone: "green" },
-            { label: "Cancelled", value: 3, tone: "red" },
-        ];
-        this.assignedAssets = [
-            { asset: "HP Laptop 840 G5", code: "AST-0001", assignedTo: "John Doe", department: "IT Department", date: "20 May 2024", status: "Active" },
-            { asset: "Dell Monitor 24\"", code: "AST-0002", assignedTo: "Jane Smith", department: "Accounts", date: "18 May 2024", status: "Active" },
-            { asset: "Canon Printer LBP2900", code: "AST-0003", assignedTo: "Michael Brown", department: "HR Department", date: "17 May 2024", status: "Active" },
-            { asset: "iPhone 13", code: "AST-0004", assignedTo: "Emily Davis", department: "Sales Department", date: "15 May 2024", status: "Active" },
-            { asset: "Office Chair", code: "AST-0005", assignedTo: "William Wilson", department: "Admin Department", date: "14 May 2024", status: "Active" },
-        ];
-        this.maintenanceRequests = [
-            { request: "MR-00058", date: "20 May 2024", asset: "HP Laptop 840 G5", code: "AST-0001", requestedBy: "John Doe", status: "New", tone: "purple" },
-            { request: "MR-00057", date: "19 May 2024", asset: "Dell Monitor 24\"", code: "AST-0002", requestedBy: "Jane Smith", status: "In Progress", tone: "blue" },
-            { request: "MR-00056", date: "18 May 2024", asset: "Canon Printer LBP2900", code: "AST-0003", requestedBy: "Michael Brown", status: "Waiting Parts", tone: "orange" },
-            { request: "MR-00055", date: "17 May 2024", asset: "Office Chair", code: "AST-0005", requestedBy: "William Wilson", status: "Completed", tone: "green" },
-            { request: "MR-00054", date: "16 May 2024", asset: "iPhone 13", code: "AST-0004", requestedBy: "Emily Davis", status: "Completed", tone: "green" },
-        ];
+        this.locations = [];
+        this.maintenanceCounts = [];
+        this.assignedAssets = [];
+        this.maintenanceRequests = [];
         this.depreciationSummary = [
-            { label: "Total Assets", value: "1,248", icon: "fa-calculator", tone: "blue" },
-            { label: "Total Purchase Value", value: "৳ 24,350,000", icon: "fa-shopping-bag", tone: "slate" },
-            { label: "Accumulated Depreciation", value: "৳ 8,450,000", icon: "fa-refresh", tone: "red" },
-            { label: "Current Book Value", value: "৳ 15,900,000", icon: "fa-briefcase", tone: "green" },
-            { label: "Monthly Depreciation", value: "৳ 320,000", icon: "fa-clock-o", tone: "purple" },
-            { label: "Yearly Depreciation", value: "৳ 3,840,000", icon: "fa-calendar", tone: "orange" },
+            { label: "Total Assets", value: "0", icon: "fa-calculator", tone: "blue" },
+            { label: "Total Purchase Value", value: "0.00", icon: "fa-shopping-bag", tone: "slate" },
+            { label: "Accumulated Depreciation", value: "0.00", icon: "fa-refresh", tone: "red" },
+            { label: "Current Book Value", value: "0.00", icon: "fa-briefcase", tone: "green" },
+            { label: "Monthly Depreciation", value: "0.00", icon: "fa-clock-o", tone: "purple" },
+            { label: "Yearly Depreciation", value: "0.00", icon: "fa-calendar", tone: "orange" },
         ];
         this.assetDetailsByCode = {};
         this.employeeOptions = [];
@@ -232,15 +208,17 @@ export class AssetDashboard extends Component {
                     idValue: `${employee.id}`,
                 }));
             }
-            if (data && data.assetRows && data.assetRows.length) {
+            if (data) {
                 this.kpis = data.kpis || this.kpis;
                 this.assetListKpis = data.assetListKpis || this.assetListKpis;
-                this.assetRows = data.assetRows || this.assetRows;
+                this.assetRows = data.assetRows || [];
                 this.assetDetailsByCode = data.assetDetailsByCode || {};
                 this.statuses = data.statuses || this.statuses;
-                this.locations = data.locations || this.locations;
+                this.locations = data.locations || [];
+                this.maintenanceCounts = data.maintenanceCounts || [];
+                this.maintenanceRequests = data.maintenanceRequests || [];
                 this.depreciationSummary = data.depreciationSummary || this.depreciationSummary;
-                this.assignedAssets = data.assignedAssets || this.assignedAssets;
+                this.assignedAssets = data.assignedAssets || [];
                 this.restoreSelectedAsset();
                 this.restoreAssetForm();
             }
@@ -282,6 +260,14 @@ export class AssetDashboard extends Component {
         const start = ((this.state.assetPage - 1) * this.state.assetPageSize) + 1;
         const end = Math.min(start + this.state.assetPageSize - 1, total);
         return `Showing ${start} to ${end} of ${total} assets`;
+    }
+
+    get dashboardTotalAssets() {
+        return this.kpis.length ? this.kpis[0].value : "0";
+    }
+
+    get maxLocationValue() {
+        return Math.max(...this.locations.map((location) => Number(location.value) || 0), 1);
     }
 
     onAssetSearch(event) {

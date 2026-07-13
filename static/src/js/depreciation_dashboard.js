@@ -58,6 +58,15 @@ export class DepreciationDashboard extends Component {
         };
     }
 
+    get scheduleTableRows() {
+        return ((this.state.data && this.state.data.scheduleRows) || []).filter((row) => row.journalEntryId);
+    }
+
+    get showScheduleTotals() {
+        const rows = (this.state.data && this.state.data.scheduleRows) || [];
+        return Boolean(rows.length) && rows.every((row) => row.journalEntryId);
+    }
+
     async loadData(assetId = false, options = {}) {
         const requestedAssetId = this.state.assetSelectionLocked ? this.state.lockedAssetId : assetId;
         const data = await this.orm.call("kio.asset.dashboard.service", "get_depreciation_dashboard_data", [requestedAssetId || false]);

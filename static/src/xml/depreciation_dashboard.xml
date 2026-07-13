@@ -151,12 +151,12 @@
                             <table class="kio_depr_table">
                                 <thead><tr><th>#</th><th>Period</th><th>From Date</th><th>To Date</th><th>Days</th><th>Opening Book Value</th><th>Depreciation Amount</th><th>Accumulated Depreciation</th><th>Closing Book Value</th><th>Status</th><th>Journal Entry</th><th>Actions</th></tr></thead>
                                 <tbody>
-                                    <t t-if="!state.data.scheduleRows.length"><tr><td colspan="12" class="kio_depr_empty_row">No depreciation schedule lines are available.</td></tr></t>
-                                    <t t-foreach="state.data.scheduleRows" t-as="row" t-key="row.sequence">
+                                    <t t-if="!scheduleTableRows.length"><tr><td colspan="12" class="kio_depr_empty_row">No data available</td></tr></t>
+                                    <t t-foreach="scheduleTableRows" t-as="row" t-key="row.journalEntryId || row.sequence">
                                         <tr><td t-esc="row.sequence"/><td t-esc="row.period"/><td t-esc="row.fromDate"/><td t-esc="row.toDate"/><td t-esc="row.days"/><td t-esc="row.openingBookValue"/><td t-esc="row.depreciationAmount"/><td t-esc="row.accumulatedDepreciation"/><td t-esc="row.closingBookValue"/><td><span t-attf-class="kio_depr_badge kio_depr_badge_#{row.statusTone}" t-esc="row.status"/></td><td><a t-if="row.journalEntryId" href="#" t-on-click.prevent="() => this.openJournalEntry(row.journalEntryId)" t-esc="row.journalEntry"/><span t-else="" t-esc="row.journalEntry"/></td><td><button class="kio_depr_icon_btn" type="button" t-on-click="() => this.viewScheduleLine(row)"><i class="fa fa-eye"/></button></td></tr>
                                     </t>
                                 </tbody>
-                                <tfoot><tr><td colspan="4">Total</td><td t-esc="state.data.totals.days"/><td></td><td t-esc="state.data.totals.depreciationAmount"/><td t-esc="state.data.totals.accumulatedDepreciation"/><td t-esc="state.data.totals.closingBookValue"/><td colspan="3"></td></tr></tfoot>
+                                <tfoot t-if="showScheduleTotals"><tr><td colspan="4">Total</td><td t-esc="state.data.totals.days"/><td></td><td t-esc="state.data.totals.depreciationAmount"/><td t-esc="state.data.totals.accumulatedDepreciation"/><td t-esc="state.data.totals.closingBookValue"/><td colspan="3"></td></tr></tfoot>
                             </table>
                         </div>
                     </section>

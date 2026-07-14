@@ -1317,6 +1317,52 @@ class KioAssetDashboardService(models.AbstractModel):
     def _valid_depreciation_debit_account(self, account, company):
         return bool(account and not account.deprecated and account.company_id and account.company_id.id == company.id)
 
+    def _product_bill_depreciation_account(self, unit):
+        account = self._purchase_bill_debit_account(unit)
+        if account:
+            return account
+
+        product = unit.product_id
+        template = product.product_tmpl_id if product else False
+        company = unit.company_id or self.env.company
+        candidates = []
+        if product and 'property_account_expense_id' in product._fields:
+            candidates.append(product.property_account_expense_id)
+        if template and 'property_account_expense_id' in template._fields:
+            candidates.append(template.property_account_expense_id)
+
+        for account in candidates:
+            if self._valid_depreciation_debit_account(account, company):
+                return account
+        raise ValidationError('Please configure the Product Bill Account for this asset.')
+
+    def _configured_depreciation_credit_account(self, unit):
+        account = unit.depreciation_expense_account_id
+        _logger.info(
+            'Depreciation configuration: asset_id=%s asset_company_id=%s configuration_field=%s configured_account_id=%s configured_account_name=%s',
+            unit.id,
+            unit.company_id.id if unit.company_id else False,
+            'depreciation_expense_account_id',
+            account.id if account else False,
+            account.display_name if account else False,
+        )
+        if account and not account.deprecated:
+            return account
+        raise ValidationError('Please configure the Credit Account in Depreciation Configuration.')
+
+    def _bill_account_depreciation_accounts(self, unit):
+        debit_account = self._product_bill_depreciation_account(unit)
+        credit_account = self._configured_depreciation_credit_account(unit)
+        _logger.info(
+            'Depreciation journal accounts: asset_id=%s asset_company_id=%s method=%s debit_account_id=%s credit_account_id=%s',
+            unit.id,
+            unit.company_id.id if unit.company_id else False,
+            unit.depreciation_method or 'straight_line',
+            debit_account.id if debit_account else False,
+            credit_account.id if credit_account else False,
+        )
+        return debit_account, credit_account
+
     def _depreciation_expense_account(self, unit):
         account = unit.depreciation_expense_account_id
         if account and not account.deprecated:
@@ -1328,7 +1374,11 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _depreciation_accounts(self, journal, unit):
         if not journal:
-            raise UserError('Please configure the Depreciation Expense Account, Accumulated Depreciation Account, and Depreciation Journal before generating depreciation entries.')
+            raise UserError('Please configure the Depreciation Journal before generating depreciation entries.')
+        method = unit.depreciation_method or 'straight_line'
+        if method in ('straight_line', 'purchase_date'):
+            return self._bill_account_depreciation_accounts(unit)
+
         debit_account = self._depreciation_expense_account(unit)
         credit_account = self._accumulated_depreciation_account(journal, unit)
         if not credit_account or credit_account.deprecated:

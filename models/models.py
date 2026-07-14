@@ -46,6 +46,7 @@ class KioAssetUnit(models.Model):
     assigned_employee_id = fields.Many2one("hr.employee", string="Assigned To", index=True, ondelete="set null")
     asset_name = fields.Char(string="Asset Name")
     category_name = fields.Char(string="Asset Category")
+    category_id = fields.Many2one('product.category', string="Asset Category", index=True, ondelete='set null')
     brand_model = fields.Char(string="Brand / Model")
     serial_number = fields.Char(string="Serial Number")
     barcode = fields.Char(string="Barcode / QR Code")
@@ -64,6 +65,7 @@ class KioAssetUnit(models.Model):
     assign_date = fields.Date(string="Assign Date")
     expected_return_date = fields.Date(string="Expected Return Date")
     supplier = fields.Char(string="Supplier / Vendor")
+    supplier_id = fields.Many2one('res.partner', string="Supplier / Vendor", index=True, ondelete='set null')
     invoice_number = fields.Char(string="Invoice Number")
     po_number = fields.Char(string="PO Number")
     tags_notes = fields.Text(string="Tags / Notes")
@@ -152,6 +154,8 @@ class KioAssetDashboardService(models.AbstractModel):
             'assignedAssets': self._recent_assigned_assets(rows),
             'employeeOptions': self._employee_options(),
             'locationOptions': self._location_options(),
+            'categoryOptions': self._category_options(),
+            'supplierOptions': self._supplier_options(rows),
         }
 
     def _employee_options(self):
@@ -165,6 +169,16 @@ class KioAssetDashboardService(models.AbstractModel):
             ('company_id', 'in', [company.id, False]),
         ], order='name asc')
         return [{'id': location.id, 'name': location.display_name, 'code': location.code or '', 'parentId': location.parent_id.id or False, 'companyId': location.company_id.id or False} for location in locations]
+
+    def _category_options(self):
+        categories = self.env['product.category'].sudo().search([], order='complete_name asc, name asc')
+        return [{'id': category.id, 'name': category.display_name} for category in categories]
+
+    def _supplier_options(self, rows=None):
+        supplier_ids = [row.get('supplierId') for row in (rows or []) if row.get('supplierId')]
+        domain = ['|', ('supplier_rank', '>', 0), ('id', 'in', supplier_ids)] if supplier_ids else [('supplier_rank', '>', 0)]
+        partners = self.env['res.partner'].sudo().search(domain, order='name asc')
+        return [{'id': partner.id, 'name': partner.display_name} for partner in partners]
 
     def _get_asset_products(self):
         category = self.env['product.category'].search([('name', '=', 'Asset Category')], limit=1)
@@ -190,6 +204,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 'quantity': 0.0,
                 'purchase_date': False,
                 'vendor': '',
+                'vendor_id': False,
                 'invoice': '',
                 'po_number': '',
             })
@@ -200,6 +215,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 product_data.update({
                     'purchase_date': line.move_id.invoice_date or line.move_id.date,
                     'vendor': line.move_id.partner_id.display_name or '',
+                    'vendor_id': line.move_id.partner_id.id or False,
                     'invoice': line.move_id.name or line.move_id.ref or '',
                     'po_number': line.move_id.invoice_origin or '',
                 })
@@ -213,12 +229,17 @@ class KioAssetDashboardService(models.AbstractModel):
         unit_value = purchase_value / quantity if quantity else purchase_value
         purchase_date = financial.get('purchase_date')
         code = product.default_code or 'AST-%05d' % product.id
+        seller_ids = product.seller_ids if 'seller_ids' in product._fields else product.product_tmpl_id.seller_ids
+        product_supplier = seller_ids[:1].partner_id if seller_ids else False
+        vendor_id = financial.get('vendor_id') or (product_supplier.id if product_supplier else False)
+        vendor_name = financial.get('vendor') or (product_supplier.display_name if product_supplier else '')
         return {
             'id': product.id,
             'productId': product.id,
             'code': code,
             'icon': self._icon_for_category(product.categ_id.name),
             'name': product.display_name,
+            'categoryId': product.categ_id.id or False,
             'category': product.categ_id.display_name or '',
             'brand': product.product_tmpl_id.x_studio_brand_model if 'x_studio_brand_model' in product.product_tmpl_id._fields else (product.product_tmpl_id.description_sale or product.display_name),
             'serial': product.barcode or '-',
@@ -237,7 +258,8 @@ class KioAssetDashboardService(models.AbstractModel):
             'status': 'Available',
             'tone': 'green',
             'purchaseValue': purchase_value,
-            'vendor': financial.get('vendor') or '',
+            'supplierId': vendor_id,
+            'vendor': vendor_name,
             'invoiceNumber': financial.get('invoice') or '',
             'poNumber': financial.get('po_number') or '',
         }
@@ -264,6 +286,8 @@ class KioAssetDashboardService(models.AbstractModel):
                     'product_id': product_id,
                     'unit_index': index,
                     'asset_code': sequence.next_by_code('asset.management.code'),
+                    'category_id': row.get('categoryId') or False,
+                    'supplier_id': row.get('supplierId') or False,
                 })
 
     def _expand_rows_by_quantity(self, rows):
@@ -284,6 +308,8 @@ class KioAssetDashboardService(models.AbstractModel):
                 asset_code = unit.asset_code
                 employee = unit.assigned_employee_id
                 location = unit.location_id
+                category = self._asset_unit_category(unit, row)
+                supplier = self._asset_unit_supplier(unit, row)
                 expanded_row = dict(row)
                 display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
                 expanded_row.update({
@@ -295,7 +321,8 @@ class KioAssetDashboardService(models.AbstractModel):
                     'assignedMeta': employee.department_id.name if employee and employee.department_id else '',
                     'employeeCode': (employee.identification_id or employee.barcode or '-') if employee else '-',
                     'name': unit.asset_name or row.get('name'),
-                    'category': unit.category_name or row.get('category'),
+                    'categoryId': category.id if category else False,
+                    'category': category.display_name if category else (unit.category_name or row.get('category')),
                     'brand': unit.brand_model or row.get('brand'),
                     'serial': unit.serial_number or row.get('serial'),
                     'barcode': unit.barcode or unit.serial_number or row.get('serial'),
@@ -315,7 +342,8 @@ class KioAssetDashboardService(models.AbstractModel):
                     'department': unit.department_name or '',
                     'assignDate': self._format_date(unit.assign_date),
                     'expectedReturnDate': self._format_date(unit.expected_return_date),
-                    'supplier': unit.supplier or row.get('vendor') or '',
+                    'supplierId': supplier.id if supplier else False,
+                    'supplier': supplier.display_name if supplier else (unit.supplier or row.get('vendor') or ''),
                     'invoiceNumber': unit.invoice_number or row.get('invoiceNumber') or '',
                     'poNumber': unit.po_number or row.get('poNumber') or '',
                     'tagsNotes': unit.tags_notes or '',
@@ -334,6 +362,50 @@ class KioAssetDashboardService(models.AbstractModel):
                 })
                 expanded.append(expanded_row)
         return expanded
+
+    def _asset_unit_supplier(self, unit, row):
+        if unit.supplier_id:
+            return unit.supplier_id
+        if unit.supplier:
+            partner = self._supplier_from_name(unit.supplier)
+            if partner:
+                return partner
+        supplier_id = row.get('supplierId')
+        if supplier_id:
+            return self.env['res.partner'].sudo().browse(supplier_id)
+        product = unit.product_id
+        if product:
+            seller_ids = product.seller_ids if 'seller_ids' in product._fields else product.product_tmpl_id.seller_ids
+            if seller_ids:
+                return seller_ids[:1].partner_id
+        return False
+
+    def _supplier_from_name(self, supplier_name):
+        name = (supplier_name or '').strip()
+        if not name:
+            return False
+        Partner = self.env['res.partner'].sudo()
+        return Partner.search(['|', ('display_name', '=', name), ('name', '=', name)], limit=1)
+
+    def _asset_unit_category(self, unit, row):
+        if unit.category_id:
+            return unit.category_id
+        if unit.category_name:
+            category = self._category_from_name(unit.category_name)
+            if category:
+                return category
+        product = unit.product_id
+        if product and product.categ_id:
+            return product.categ_id
+        category_id = row.get('categoryId')
+        return self.env['product.category'].sudo().browse(category_id) if category_id else False
+
+    def _category_from_name(self, category_name):
+        name = (category_name or '').strip()
+        if not name:
+            return False
+        Category = self.env['product.category'].sudo()
+        return Category.search(['|', ('complete_name', '=', name), ('name', '=', name)], limit=1)
 
     def _migrate_unit_location(self, unit):
         if unit.location_id or not unit.location or unit.location == '-':
@@ -435,6 +507,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'activeState': 'Active' if row.get('active', True) else 'Inactive',
             'active': row.get('active', True),
             'serial': row['serial'],
+            'categoryId': row.get('categoryId') or False,
             'category': row['category'],
             'brand': row['brand'],
             'assetType': row.get('assetType') or 'Tangible',
@@ -444,6 +517,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'condition': row.get('condition') or 'New',
             'description': row.get('description') or row['name'],
             'tagsNotes': row.get('tagsNotes') or '',
+            'supplierId': row.get('supplierId') or False,
             'supplier': row.get('supplier') or row.get('vendor') or '-',
             'invoiceNumber': row.get('invoiceNumber') or '-',
             'poNumber': row.get('poNumber') or '-',

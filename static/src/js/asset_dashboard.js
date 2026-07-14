@@ -116,6 +116,8 @@ export class AssetDashboard extends Component {
         this.assetDetailsByCode = {};
         this.employeeOptions = [];
         this.locationOptions = [];
+        this.categoryOptions = [];
+        this.supplierOptions = [];
         onWillStart(async () => this.loadDynamicAssetData());
         useBus(this.env.bus, "ROUTE_CHANGE", () => this.restoreRouteState());
         this.updateRoute({ replace: true });
@@ -206,10 +208,13 @@ export class AssetDashboard extends Component {
     }
 
     fillAssetFormFromRow(row) {
+        const categoryValue = row.categoryId || row.category_id;
+        const supplierValue = row.supplierId || row.supplier_id || row.vendorId || row.vendor_id;
         Object.assign(this.addAssetForm, {
             assetCode: row.code,
             assetName: row.name,
-            category: row.category,
+            category: this.many2oneName(categoryValue, row.category),
+            categoryId: this.many2oneId(categoryValue),
             brandModel: row.brand,
             serialNumber: row.serial,
             barcode: row.barcode || row.serial,
@@ -223,7 +228,8 @@ export class AssetDashboard extends Component {
             depreciationStartDate: this.normalizeDateInput(row.depreciationStartDate),
             condition: row.condition || "",
             description: row.description || "",
-            supplier: row.supplier || row.vendor || "",
+            supplier: this.many2oneName(supplierValue, row.supplier || row.vendor || ""),
+            supplierId: this.many2oneId(supplierValue),
             invoiceNumber: row.invoiceNumber || "",
             poNumber: row.poNumber || "",
             location: row.location,
@@ -255,6 +261,15 @@ export class AssetDashboard extends Component {
                 this.locationOptions = (data.locationOptions || this.locationOptions).map((location) => ({
                     ...location,
                     idValue: `${location.id}`,
+                }));
+                this.categoryOptions = (data.categoryOptions || this.categoryOptions).map((category) => ({
+                    ...category,
+                    idValue: `${category.id}`,
+                    label: category.name,
+                }));
+                this.supplierOptions = (data.supplierOptions || this.supplierOptions).map((supplier) => ({
+                    ...supplier,
+                    idValue: `${supplier.id}`,
                 }));
             }
             if (data) {
@@ -484,6 +499,20 @@ export class AssetDashboard extends Component {
         this.addAssetForm.employeeId = employee ? (employee.employeeCode || "-") : "-";
     }
 
+    onAssetSupplierChange(event) {
+        const supplierId = event.target.value || "";
+        const supplier = this.supplierOptions.find((item) => item.idValue === supplierId);
+        this.addAssetForm.supplierId = supplierId;
+        this.addAssetForm.supplier = supplier ? supplier.name : this.addAssetForm.supplier;
+    }
+
+    onAssetCategoryChange(event) {
+        const categoryId = event.target.value || "";
+        const category = this.categoryOptions.find((item) => item.idValue === categoryId);
+        this.addAssetForm.categoryId = categoryId;
+        this.addAssetForm.category = category ? category.name : this.addAssetForm.category;
+    }
+
     onAssetFormInput(fieldName, event) {
         if (!ASSET_TEXT_FIELDS.has(fieldName)) {
             return;
@@ -529,6 +558,7 @@ export class AssetDashboard extends Component {
     buildAssetWriteValues() {
         const vals = {
             asset_name: this.optionalText(this.addAssetForm.assetName),
+            category_id: this.addAssetForm.categoryId ? Number(this.addAssetForm.categoryId) : false,
             category_name: this.optionalText(this.addAssetForm.category),
             brand_model: this.optionalText(this.addAssetForm.brandModel),
             serial_number: this.optionalText(this.addAssetForm.serialNumber),
@@ -552,6 +582,7 @@ export class AssetDashboard extends Component {
             useful_life_years: this.parseIntegerInput(this.addAssetForm.usefulLife) || 1,
             residual_value: this.parseNumberInput(this.addAssetForm.residualValue),
             depreciation_start_date: this.normalizeDateInput(this.addAssetForm.depreciationStartDate) || false,
+            supplier_id: this.addAssetForm.supplierId ? Number(this.addAssetForm.supplierId) : false,
             supplier: this.optionalText(this.addAssetForm.supplier),
             invoice_number: this.optionalText(this.addAssetForm.invoiceNumber),
             po_number: this.optionalText(this.addAssetForm.poNumber),
@@ -562,6 +593,20 @@ export class AssetDashboard extends Component {
             vals.image_1920 = this.addAssetForm.imageBinary;
         }
         return vals;
+    }
+
+    many2oneId(value) {
+        if (Array.isArray(value)) {
+            return value[0] ? String(value[0]) : "";
+        }
+        return value ? String(value) : "";
+    }
+
+    many2oneName(value, fallback = "") {
+        if (Array.isArray(value)) {
+            return value[1] || fallback || "";
+        }
+        return fallback || "";
     }
 
     optionalText(value) {
@@ -601,6 +646,7 @@ export class AssetDashboard extends Component {
             assetCode: "",
             assetName: "",
             category: "",
+            categoryId: "",
             brandModel: "",
             serialNumber: "",
             barcode: "",
@@ -626,6 +672,7 @@ export class AssetDashboard extends Component {
             residualValue: "",
             depreciationStartDate: "",
             supplier: "",
+            supplierId: "",
             invoiceNumber: "",
             poNumber: "",
             tagsNotes: "",
@@ -662,6 +709,7 @@ export class AssetDashboard extends Component {
             assetCode: this.selectedAsset.code,
             assetName: this.selectedAsset.name,
             category: this.selectedAsset.category,
+            categoryId: this.selectedAsset.categoryId ? String(this.selectedAsset.categoryId) : "",
             brandModel: this.selectedAsset.brand,
             serialNumber: this.selectedAsset.serial,
             barcode: this.selectedAsset.barcode,
@@ -687,6 +735,7 @@ export class AssetDashboard extends Component {
             residualValue: this.selectedAsset.residualValue !== undefined && this.selectedAsset.residualValue !== null ? String(this.selectedAsset.residualValue) : "",
             depreciationStartDate: this.normalizeDateInput(this.selectedAsset.depreciationStartDate),
             supplier: this.selectedAsset.supplier,
+            supplierId: this.selectedAsset.supplierId ? String(this.selectedAsset.supplierId) : "",
             invoiceNumber: this.selectedAsset.invoiceNumber,
             poNumber: this.selectedAsset.poNumber,
             tagsNotes: this.selectedAsset.tagsNotes,

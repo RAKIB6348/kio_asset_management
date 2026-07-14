@@ -99,7 +99,7 @@
                 <section class="kio_form_card kio_additional_card">
                     <div class="kio_form_card_header"><i class="fa fa-clipboard"/><h2>Additional Information</h2></div>
                     <div class="kio_form_grid kio_additional_grid">
-                        <label class="kio_form_field"><span>Supplier / Vendor</span><select t-att-value="addAssetForm.supplierId || &quot;&quot;" t-on-change="onAssetSupplierChange"><option value="" t-att-selected="!addAssetForm.supplierId" t-esc="addAssetForm.supplier || 'Select Supplier'"/><t t-foreach="supplierOptions" t-as="supplier" t-key="supplier.id"><option t-att-value="supplier.idValue" t-att-selected="(addAssetForm.supplierId || &quot;&quot;) === supplier.idValue" t-esc="supplier.name"/></t></select></label>
+                        <label class="kio_form_field"><span>Supplier / Vendor</span><input t-att-value="addAssetForm.supplier" readonly="readonly"/></label>
                         <label class="kio_form_field"><span>Invoice Number</span><input t-att-value="addAssetForm.invoiceNumber" t-on-input="(ev) => this.onAssetFormInput('invoiceNumber', ev)"/></label>
                         <label class="kio_form_field"><span>PO Number</span><input t-att-value="addAssetForm.poNumber" t-on-input="(ev) => this.onAssetFormInput('poNumber', ev)"/></label>
                         <label class="kio_form_field"><span>Tags / Notes</span><textarea t-att-value="addAssetForm.tagsNotes" t-on-input="(ev) => this.onAssetFormInput('tagsNotes', ev)"><t t-esc="addAssetForm.tagsNotes"/></textarea></label>

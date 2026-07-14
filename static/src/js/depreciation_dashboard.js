@@ -79,6 +79,12 @@ export class DepreciationDashboard extends Component {
         };
     }
 
+    get selectedAssetLabel() {
+        const assetId = Number(this.state.selectedAssetId) || false;
+        const asset = ((this.state.data && this.state.data.assetOptions) || []).find((item) => item.id === assetId);
+        return asset ? asset.label : "";
+    }
+
     get scheduleTableRows() {
         return ((this.state.data && this.state.data.scheduleRows) || []).filter((row) => row.journalEntryId);
     }

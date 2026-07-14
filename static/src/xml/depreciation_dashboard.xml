@@ -26,7 +26,7 @@
 
             <main class="kio_depr_main">
                 <section class="kio_depr_filter_card">
-                    <label><span>Asset</span><select t-att-value="state.selectedAssetId || ''" t-att-disabled="state.assetSelectionLocked" t-on-change="onAssetChange"><option value="" t-att-selected="!state.selectedAssetId">Select Asset</option><t t-foreach="state.data.assetOptions" t-as="asset" t-key="asset.id"><option t-att-value="asset.id" t-att-selected="asset.id === state.selectedAssetId" t-esc="asset.label"/></t></select></label>
+                    <label><span>Asset</span><input t-att-value="selectedAssetLabel" readonly="readonly"/></label>
                     <label><span>Depreciation Method</span><select t-att-value="state.data.filters.method" t-on-change="onMethodChange"><t t-foreach="state.data.methodOptions" t-as="method" t-key="method.value"><option t-att-value="method.value" t-esc="method.label"/></t></select></label>
                     <label><span>Fiscal Year</span><select t-att-value="state.data.filters.fiscalYear" t-on-change="onFiscalYearChange"><t t-foreach="state.data.fiscalYearOptions" t-as="year" t-key="year.value"><option t-att-value="year.value" t-esc="year.label"/></t></select></label>
                     <label><span>From Date</span><div class="kio_depr_date"><input type="date" t-att-value="state.data.filters.fromDate" t-on-click="openDepreciationDatePicker" t-on-change="onFromDateChange"/><i class="fa fa-calendar" t-on-click="openDepreciationDatePicker"/></div></label>

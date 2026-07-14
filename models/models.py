@@ -752,14 +752,29 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def create_depreciation_journal_entries(self, asset_id):
-        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id or 0))
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
+
+        # ==================== VALIDATION ====================
+        row = self._select_asset_row(self._current_asset_rows(), unit.id)
+        purchase_value = row.get('unitPrice', 0.0)
+        useful_life = max(unit.useful_life_years or 0, 1)
+        calculation = self._depreciation_values(unit, purchase_value, useful_life)
+
+        if calculation.get('monthly_amount', 0) < 0.01:
+            return {
+                'success': False,
+                'message': 'Monthly Depreciation must be greater than zero. '
+                           'Please go to Depreciation Summary and set a valid Monthly Depreciation amount.'
+            }
+        # ====================================================
 
         _calculation, schedule = self._asset_schedule_snapshot(unit)
         journal = self._depreciation_journal(unit)
         if not journal:
-            return {'success': False, 'message': 'Please configure the Depreciation Expense Account, Accumulated Depreciation Account, and Depreciation Journal before generating depreciation entries.'}
+            return {'success': False,
+                    'message': 'Please configure the Depreciation Expense Account, Accumulated Depreciation Account, and Depreciation Journal before generating depreciation entries.'}
 
         result = self._ensure_depreciation_moves(unit, schedule, journal, post_due=True)
         data = self.get_depreciation_dashboard_data(unit.id)
@@ -769,14 +784,29 @@ class KioAssetDashboardService(models.AbstractModel):
 
     @api.model
     def run_asset_depreciation(self, asset_id):
-        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id))
+        unit = self.env['kio.asset.unit'].sudo().with_context(active_test=False).browse(int(asset_id or 0))
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
+
+        # ==================== VALIDATION ====================
+        row = self._select_asset_row(self._current_asset_rows(), unit.id)
+        purchase_value = row.get('unitPrice', 0.0)
+        useful_life = max(unit.useful_life_years or 0, 1)
+        calculation = self._depreciation_values(unit, purchase_value, useful_life)
+
+        if calculation.get('monthly_amount', 0) < 0.01:
+            return {
+                'success': False,
+                'message': 'Monthly Depreciation must be greater than zero. '
+                           'Please go to Depreciation Summary and set a valid Monthly Depreciation amount.'
+            }
+        # ====================================================
 
         _calculation, schedule = self._asset_schedule_snapshot(unit)
         journal = self._depreciation_journal(unit)
         if not journal:
-            return {'success': False, 'message': 'Please configure the Depreciation Expense Account, Accumulated Depreciation Account, and Depreciation Journal before generating depreciation entries.'}
+            return {'success': False,
+                    'message': 'Please configure the Depreciation Expense Account, Accumulated Depreciation Account, and Depreciation Journal before generating depreciation entries.'}
 
         result = self._ensure_depreciation_moves(unit, schedule, journal, post_due=True)
         data = self.get_depreciation_dashboard_data(unit.id)

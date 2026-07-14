@@ -439,13 +439,51 @@ export class DepreciationDashboard extends Component {
     }
 
     async runDepreciation() {
-        const result = await this.orm.call("kio.asset.dashboard.service", "run_asset_depreciation", [this.state.selectedAssetId || false]);
-        this.applyDashboardResult(result, "Depreciation journal entry posted successfully.");
+        if (!this.state.selectedAssetId) {
+            this.notification.add("Please select an asset first.", { type: "danger" });
+            return;
+        }
+
+        const result = await this.orm.call(
+            "kio.asset.dashboard.service",
+            "run_asset_depreciation",
+            [this.state.selectedAssetId]
+        );
+
+        this.applyDashboardResult(result);
+
+        if (result && !result.success) {
+            this.notification.add(result.message, {
+                type: "danger",
+                title: "Validation Error"
+            });
+        } else if (result && result.success) {
+            this.notification.add("Depreciation journal entries processed successfully.", { type: "success" });
+        }
     }
 
     async createJournalEntries() {
-        const result = await this.orm.call("kio.asset.dashboard.service", "create_depreciation_journal_entries", [this.state.selectedAssetId || false]);
-        this.applyDashboardResult(result, "Draft journal entries created successfully.");
+        if (!this.state.selectedAssetId) {
+            this.notification.add("Please select an asset first.", { type: "danger" });
+            return;
+        }
+
+        const result = await this.orm.call(
+            "kio.asset.dashboard.service",
+            "create_depreciation_journal_entries", 
+            [this.state.selectedAssetId]
+        );
+
+        this.applyDashboardResult(result);
+
+        if (result && !result.success) {
+            this.notification.add(result.message, {
+                type: "danger",
+                title: "Validation Error"
+            });
+        } else if (result && result.success) {
+            this.notification.add("Journal entries created successfully.", { type: "success" });
+        }
     }
 
     moreActions() {

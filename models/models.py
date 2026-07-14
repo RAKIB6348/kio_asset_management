@@ -638,7 +638,8 @@ class KioAssetDashboardService(models.AbstractModel):
         product = unit.product_id
         purchase_value = selected.get('unitPrice') or 0.0
         useful_life = max(unit.useful_life_years or 0, 1)
-        start_date = self._depreciation_start_date(unit, selected)
+        schedule_start_date = self._depreciation_start_date(unit, selected)
+        start_date = schedule_start_date or fields.Date.context_today(self)
         calculation = self._depreciation_values(unit, purchase_value, useful_life)
         residual_value = calculation['residual_value']
         months = calculation['months']
@@ -646,7 +647,7 @@ class KioAssetDashboardService(models.AbstractModel):
         monthly_amount = calculation['monthly_amount']
         annual_amount = calculation['annual_amount']
         ending_book_value = calculation['ending_book_value']
-        schedule = self._depreciation_schedule(unit, start_date, months, purchase_value, ending_book_value, monthly_amount)
+        schedule = self._depreciation_schedule(unit, schedule_start_date, months, purchase_value, ending_book_value, monthly_amount) if schedule_start_date else []
         schedule_rows = self._serialize_schedule(schedule)
         schedule_end_date = schedule[-1]['toDateRaw'] if schedule else start_date
         posted_rows = [line for line in schedule if line['status'] == 'Posted']
@@ -714,7 +715,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'progress': {
                 'percent': min(progress_percent, 100.0),
                 'percentText': '%.2f%%' % min(progress_percent, 100.0),
-                'elapsedTime': self._elapsed_depreciation_time(start_date),
+                'elapsedTime': self._purchase_date_elapsed_time(posted_rows) if unit.depreciation_method == 'purchase_date' else self._elapsed_depreciation_time(start_date),
                 'completedDepreciation': self._format_money(completed),
                 'remainingDepreciation': self._format_money(max(depreciable - completed, 0.0)),
                 'endingBookValue': self._format_money(ending_book_value),
@@ -936,14 +937,26 @@ class KioAssetDashboardService(models.AbstractModel):
         valid_methods = dict(self.env['kio.asset.unit']._fields['depreciation_method'].selection)
         if method not in valid_methods:
             errors['depreciationMethod'] = 'Select a valid Depreciation Method.'
+        if method == 'purchase_date' and not (unit.purchase_date or self._parse_row_date(row.get('purchaseDate') if row else False)):
+            errors['depreciationStartDate'] = 'Purchase Date is required.'
 
         if errors:
             return {'success': False, 'errors': errors}
 
-        total_months = self._depreciation_total_months(method, useful_life)
-        posted_count = self._posted_depreciation_move_count(unit)
-        if total_months <= posted_count:
-            errors['usefulLifeYears'] = 'Useful Life conflicts with already posted depreciation entries. Total periods must be greater than posted period count (%s).' % posted_count
+        posted_moves = self._posted_depreciation_moves(unit)
+        if method == 'purchase_date':
+            posted_other_moves = posted_moves.filtered(lambda move: not self._is_purchase_date_depreciation_move(unit, move))
+            if posted_other_moves:
+                errors['depreciationMethod'] = 'Cannot change to Purchase Date because posted Straight Line depreciation entries already exist.'
+        elif unit.depreciation_method == 'purchase_date':
+            posted_purchase_date_moves = posted_moves.filtered(lambda move: self._is_purchase_date_depreciation_move(unit, move))
+            if posted_purchase_date_moves:
+                errors['depreciationMethod'] = 'Cannot change from Purchase Date because the Purchase Date journal entry is already posted.'
+        else:
+            total_months = self._depreciation_total_months(method, useful_life)
+            posted_count = len(posted_moves)
+            if total_months <= posted_count:
+                errors['usefulLifeYears'] = 'Useful Life conflicts with already posted depreciation entries. Total periods must be greater than posted period count (%s).' % posted_count
 
         max_depreciable = max(purchase_value - residual_value, 0.0)
         if method in ('straight_line', 'purchase_date'):
@@ -968,6 +981,7 @@ class KioAssetDashboardService(models.AbstractModel):
         if errors:
             return {'success': False, 'errors': errors}
 
+        previous_method = unit.depreciation_method
         unit.write({
             'depreciation_method': method,
             'useful_life_years': useful_life,
@@ -975,6 +989,10 @@ class KioAssetDashboardService(models.AbstractModel):
             'residual_value': residual_value,
             'manual_depreciable_amount': depreciable_amount,
         })
+        if method == 'purchase_date':
+            self._remove_draft_non_purchase_date_depreciation_moves(unit)
+        elif previous_method == 'purchase_date':
+            self._remove_draft_purchase_date_depreciation_moves(unit)
 
         data = self.get_depreciation_dashboard_data(unit.id)
         data['success'] = True
@@ -986,6 +1004,8 @@ class KioAssetDashboardService(models.AbstractModel):
         purchase_value = row.get('unitPrice') if row else 0.0
         useful_life = max(unit.useful_life_years or 0, 1)
         start_date = self._depreciation_start_date(unit, row)
+        if not start_date:
+            raise ValidationError('Purchase Date is required.' if unit.depreciation_method == 'purchase_date' else 'Depreciation Start Date is required.')
         calculation = self._depreciation_values(unit, purchase_value, useful_life)
         schedule = self._depreciation_schedule(unit, start_date, calculation['months'], purchase_value, calculation['ending_book_value'], calculation['monthly_amount'])
         return calculation, schedule
@@ -1000,13 +1020,31 @@ class KioAssetDashboardService(models.AbstractModel):
     def _depreciation_start_date(self, unit, row=False):
         purchase_date = unit.purchase_date or self._parse_row_date(row.get('purchaseDate') if row else False)
         if unit.depreciation_method == 'purchase_date':
-            return purchase_date or fields.Date.context_today(self)
+            return purchase_date or False
         return unit.depreciation_start_date or purchase_date or fields.Date.context_today(self)
 
     def _depreciation_total_months(self, method, useful_life):
         if method == 'purchase_date':
             return 1
         return max(useful_life or 0, 1) * 12
+
+    def _is_purchase_date_depreciation_move(self, unit, move):
+        purchase_date = self._depreciation_start_date(unit, self._select_asset_row(self._current_asset_rows(), unit.id))
+        return bool(purchase_date and move.kio_depreciation_period_start == purchase_date and move.kio_depreciation_period_end == purchase_date)
+
+    def _remove_draft_purchase_date_depreciation_moves(self, unit):
+        moves = self._asset_depreciation_moves(unit).filtered(lambda move: move.state == 'draft' and self._is_purchase_date_depreciation_move(unit, move))
+        count = len(moves)
+        if moves:
+            moves.unlink()
+        return count
+
+    def _remove_draft_non_purchase_date_depreciation_moves(self, unit):
+        moves = self._asset_depreciation_moves(unit).filtered(lambda move: move.state == 'draft' and not self._is_purchase_date_depreciation_move(unit, move))
+        count = len(moves)
+        if moves:
+            moves.unlink()
+        return count
 
     def _posted_depreciation_move_count(self, unit):
         return len(self._posted_depreciation_moves(unit))
@@ -1022,9 +1060,16 @@ class KioAssetDashboardService(models.AbstractModel):
         if purchase_value < unit.residual_value:
             return 'Purchase Price must be greater than or equal to Residual Value.'
         if not self._depreciation_start_date(unit, self._select_asset_row(self._current_asset_rows(), unit.id)):
-            return 'Depreciation Start Date is required.'
-        total_months = self._depreciation_total_months(unit.depreciation_method or 'straight_line', useful_life)
-        posted_count = self._posted_depreciation_move_count(unit)
+            return 'Purchase Date is required.' if (unit.depreciation_method or 'straight_line') == 'purchase_date' else 'Depreciation Start Date is required.'
+        method = unit.depreciation_method or 'straight_line'
+        posted_moves = self._posted_depreciation_moves(unit)
+        if method == 'purchase_date':
+            posted_other_moves = posted_moves.filtered(lambda move: not self._is_purchase_date_depreciation_move(unit, move))
+            if posted_other_moves:
+                return 'Cannot change to Purchase Date because posted Straight Line depreciation entries already exist.'
+            return False
+        total_months = self._depreciation_total_months(method, useful_life)
+        posted_count = len(posted_moves)
         if total_months <= posted_count:
             return 'Useful Life conflicts with already posted depreciation entries. Total periods must be greater than posted period count (%s).' % posted_count
         return False
@@ -1069,8 +1114,12 @@ class KioAssetDashboardService(models.AbstractModel):
                 depreciable_amount = max_depreciable_amount
             else:
                 depreciable_amount = min(max(manual_depreciable, 0.0), max_depreciable_amount)
-        monthly_amount = depreciable_amount / months if months else 0.0
-        annual_amount = depreciable_amount / useful_life if useful_life else 0.0
+        if unit.depreciation_method == 'purchase_date':
+            monthly_amount = depreciable_amount
+            annual_amount = depreciable_amount
+        else:
+            monthly_amount = depreciable_amount / months if months else 0.0
+            annual_amount = depreciable_amount / useful_life if useful_life else 0.0
         ending_book_value = max(purchase_value - depreciable_amount, 0.0)
         return {
             'residual_value': residual_value,
@@ -1142,7 +1191,7 @@ class KioAssetDashboardService(models.AbstractModel):
     def _purchase_date_depreciation_schedule(self, unit, purchase_date, purchase_value, ending_book_value, moves):
         amount = max(purchase_value - ending_book_value, 0.0)
         move = self._find_depreciation_move_by_period(moves, purchase_date, purchase_date)
-        return [self._depreciation_schedule_row(
+        row = self._depreciation_schedule_row(
             sequence=1,
             period_start=purchase_date,
             period_end=purchase_date,
@@ -1151,7 +1200,12 @@ class KioAssetDashboardService(models.AbstractModel):
             accumulated=amount,
             closing=ending_book_value,
             move=move,
-        )]
+        )
+        row['period'] = 'Purchase Date Depreciation'
+        if not move:
+            row['status'] = 'Draft'
+            row['statusTone'] = self._depreciation_status_tone('Draft')
+        return [row]
 
     def _next_depreciation_period_start(self, start_date, last_period_end=False):
         if last_period_end:
@@ -1423,12 +1477,16 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _ensure_depreciation_moves(self, unit, schedule, journal, post_due=False):
         today = fields.Date.context_today(self)
-        result = {'created': 0, 'updated': 0, 'posted': 0, 'existing': 0, 'errors': []}
+        result = {'created': 0, 'updated': 0, 'posted': 0, 'existing': 0, 'removed': 0, 'purchase_date_existing': False, 'errors': []}
         self._depreciation_accounts(journal, unit)
+        if unit.depreciation_method == 'purchase_date':
+            result['removed'] = self._remove_draft_non_purchase_date_depreciation_moves(unit)
         for line in schedule:
             move = line.get('moveRecord') or self._find_depreciation_move(unit, line)
             if move:
                 result['existing'] += 1
+                if unit.depreciation_method == 'purchase_date':
+                    result['purchase_date_existing'] = True
                 if move.state == 'draft':
                     self._update_draft_depreciation_move(move, unit, line, journal)
                     result['updated'] += 1
@@ -1446,6 +1504,10 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _depreciation_generation_message(self, result):
         parts = []
+        if result.get('purchase_date_existing') and not result['created']:
+            parts.append('Purchase Date depreciation journal entry already exists for this asset.')
+        if result.get('removed'):
+            parts.append('%s draft depreciation journal entries removed.' % result['removed'])
         if result['created']:
             parts.append('%s depreciation journal entries created.' % result['created'])
         if result.get('updated'):
@@ -1523,6 +1585,9 @@ class KioAssetDashboardService(models.AbstractModel):
         if 'bill_tag' in self.env['account.move']._fields:
             vals['bill_tag'] = 'vendor'
         return self.env['account.move'].sudo().create(vals)
+
+    def _purchase_date_elapsed_time(self, posted_rows):
+        return '1 Period' if posted_rows else '0 Months'
 
     def _elapsed_depreciation_time(self, start_date):
         today = fields.Date.context_today(self)

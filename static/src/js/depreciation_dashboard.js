@@ -325,7 +325,7 @@ export class DepreciationDashboard extends Component {
         if (fieldName === "annualDepreciation" || fieldName === "monthlyDepreciation" || fieldName === "depreciableAmount") {
             this.state.summaryDriverField = fieldName;
         }
-        if (fieldName === "usefulLifeYears" || fieldName === "residualValue" || fieldName === "annualDepreciation" || fieldName === "monthlyDepreciation" || fieldName === "depreciableAmount") {
+        if (fieldName === "depreciationMethod" || fieldName === "usefulLifeYears" || fieldName === "residualValue" || fieldName === "annualDepreciation" || fieldName === "monthlyDepreciation" || fieldName === "depreciableAmount") {
             this.syncSummaryDerivedValues(fieldName);
         }
         this.state.summaryErrors = this.validateSummaryForm();
@@ -336,8 +336,24 @@ export class DepreciationDashboard extends Component {
         if (!Number.isFinite(usefulLife) || usefulLife <= 0) {
             return;
         }
-        const months = usefulLife * 12;
+        const method = this.state.summaryForm.depreciationMethod || "straight_line";
+        const months = method === "purchase_date" ? 1 : usefulLife * 12;
         if (!months) {
+            return;
+        }
+        if (method === "straight_line" || method === "purchase_date") {
+            const summaryInputs = this.state.data.summaryInputs || {};
+            const purchasePrice = Number(summaryInputs.purchasePrice || 0);
+            const residualValue = Number(this.state.summaryForm.residualValue || 0);
+            if (!Number.isFinite(purchasePrice) || !Number.isFinite(residualValue)) {
+                return;
+            }
+            const depreciable = Math.max(purchasePrice - residualValue, 0);
+            const monthly = depreciable / months;
+            this.state.summaryForm.depreciableAmount = this.decimalToInput(depreciable);
+            this.state.summaryForm.monthlyDepreciation = this.decimalToInput(monthly);
+            this.state.summaryForm.annualDepreciation = this.decimalToInput(method === "purchase_date" ? depreciable : depreciable / usefulLife);
+            this.state.summaryDriverField = "depreciableAmount";
             return;
         }
         if (changedField === "monthlyDepreciation") {

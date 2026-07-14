@@ -638,7 +638,7 @@ class KioAssetDashboardService(models.AbstractModel):
         product = unit.product_id
         purchase_value = selected.get('unitPrice') or 0.0
         useful_life = max(unit.useful_life_years or 0, 1)
-        start_date = unit.depreciation_start_date or self._parse_row_date(selected.get('purchaseDate')) or fields.Date.context_today(self)
+        start_date = self._depreciation_start_date(unit, selected)
         calculation = self._depreciation_values(unit, purchase_value, useful_life)
         residual_value = calculation['residual_value']
         months = calculation['months']
@@ -648,6 +648,7 @@ class KioAssetDashboardService(models.AbstractModel):
         ending_book_value = calculation['ending_book_value']
         schedule = self._depreciation_schedule(unit, start_date, months, purchase_value, ending_book_value, monthly_amount)
         schedule_rows = self._serialize_schedule(schedule)
+        schedule_end_date = schedule[-1]['toDateRaw'] if schedule else start_date
         posted_rows = [line for line in schedule if line['status'] == 'Posted']
         completed = sum(line['depreciationAmountRaw'] for line in posted_rows)
         completed = min(completed, depreciable)
@@ -673,7 +674,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 'method': unit.depreciation_method or 'straight_line',
                 'fiscalYear': '%s:%s' % (fields.Date.to_string(fiscal_start), fields.Date.to_string(fiscal_end)),
                 'fromDate': fields.Date.to_string(start_date),
-                'toDate': fields.Date.to_string(start_date + relativedelta(months=months, days=-1)),
+                'toDate': fields.Date.to_string(schedule_end_date),
             },
             'assetInfo': {
                 'imageUrl': selected.get('imageUrl') or '',
@@ -756,19 +757,11 @@ class KioAssetDashboardService(models.AbstractModel):
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
 
-        # ==================== VALIDATION ====================
         row = self._select_asset_row(self._current_asset_rows(), unit.id)
-        purchase_value = row.get('unitPrice', 0.0)
-        useful_life = max(unit.useful_life_years or 0, 1)
-        calculation = self._depreciation_values(unit, purchase_value, useful_life)
-
-        if calculation.get('monthly_amount', 0) < 0.01:
-            return {
-                'success': False,
-                'message': 'Monthly Depreciation must be greater than zero. '
-                           'Please go to Depreciation Summary and set a valid Monthly Depreciation amount.'
-            }
-        # ====================================================
+        purchase_value = row.get('unitPrice', 0.0) if row else 0.0
+        validation_error = self._depreciation_schedule_validation_error(unit, purchase_value, max(unit.useful_life_years or 0, 1))
+        if validation_error:
+            return {'success': False, 'message': validation_error}
 
         _calculation, schedule = self._asset_schedule_snapshot(unit)
         journal = self._depreciation_journal(unit)
@@ -788,19 +781,11 @@ class KioAssetDashboardService(models.AbstractModel):
         if not unit.exists():
             return {'success': False, 'message': 'The selected asset no longer exists.'}
 
-        # ==================== VALIDATION ====================
         row = self._select_asset_row(self._current_asset_rows(), unit.id)
-        purchase_value = row.get('unitPrice', 0.0)
-        useful_life = max(unit.useful_life_years or 0, 1)
-        calculation = self._depreciation_values(unit, purchase_value, useful_life)
-
-        if calculation.get('monthly_amount', 0) < 0.01:
-            return {
-                'success': False,
-                'message': 'Monthly Depreciation must be greater than zero. '
-                           'Please go to Depreciation Summary and set a valid Monthly Depreciation amount.'
-            }
-        # ====================================================
+        purchase_value = row.get('unitPrice', 0.0) if row else 0.0
+        validation_error = self._depreciation_schedule_validation_error(unit, purchase_value, max(unit.useful_life_years or 0, 1))
+        if validation_error:
+            return {'success': False, 'message': validation_error}
 
         _calculation, schedule = self._asset_schedule_snapshot(unit)
         journal = self._depreciation_journal(unit)
@@ -955,15 +940,23 @@ class KioAssetDashboardService(models.AbstractModel):
         if errors:
             return {'success': False, 'errors': errors}
 
-        months = useful_life * 12
+        total_months = self._depreciation_total_months(method, useful_life)
+        posted_count = self._posted_depreciation_move_count(unit)
+        if total_months <= posted_count:
+            errors['usefulLifeYears'] = 'Useful Life conflicts with already posted depreciation entries. Total periods must be greater than posted period count (%s).' % posted_count
+
         max_depreciable = max(purchase_value - residual_value, 0.0)
-        driver = values.get('driverField') or 'depreciableAmount'
-        if driver == 'monthlyDepreciation':
-            depreciable_amount = numeric_values['monthlyDepreciation'] * months
-        elif driver == 'annualDepreciation':
-            depreciable_amount = numeric_values['annualDepreciation'] * useful_life
+        if method in ('straight_line', 'purchase_date'):
+            depreciable_amount = max_depreciable
         else:
-            depreciable_amount = numeric_values['depreciableAmount']
+            driver = values.get('driverField') or 'depreciableAmount'
+            months = useful_life * 12
+            if driver == 'monthlyDepreciation':
+                depreciable_amount = numeric_values['monthlyDepreciation'] * months
+            elif driver == 'annualDepreciation':
+                depreciable_amount = numeric_values['annualDepreciation'] * useful_life
+            else:
+                depreciable_amount = numeric_values['depreciableAmount']
 
         if depreciable_amount > max_depreciable + 1e-9:
             errors['depreciableAmount'] = 'Depreciable Amount cannot exceed Purchase Price minus Residual Value.'
@@ -992,7 +985,7 @@ class KioAssetDashboardService(models.AbstractModel):
         row = self._select_asset_row(self._current_asset_rows(), unit.id)
         purchase_value = row.get('unitPrice') if row else 0.0
         useful_life = max(unit.useful_life_years or 0, 1)
-        start_date = unit.depreciation_start_date or self._parse_row_date(row.get('purchaseDate') if row else False) or fields.Date.context_today(self)
+        start_date = self._depreciation_start_date(unit, row)
         calculation = self._depreciation_values(unit, purchase_value, useful_life)
         schedule = self._depreciation_schedule(unit, start_date, calculation['months'], purchase_value, calculation['ending_book_value'], calculation['monthly_amount'])
         return calculation, schedule
@@ -1003,6 +996,38 @@ class KioAssetDashboardService(models.AbstractModel):
         base_rows = [self._product_to_asset_row(product, purchase_map.get(product.id, {})) for product in products[:80]]
         self._sync_asset_units(base_rows)
         return sorted(self._expand_rows_by_quantity(base_rows), key=lambda row: row['code'], reverse=True)
+
+    def _depreciation_start_date(self, unit, row=False):
+        purchase_date = unit.purchase_date or self._parse_row_date(row.get('purchaseDate') if row else False)
+        if unit.depreciation_method == 'purchase_date':
+            return purchase_date or fields.Date.context_today(self)
+        return unit.depreciation_start_date or purchase_date or fields.Date.context_today(self)
+
+    def _depreciation_total_months(self, method, useful_life):
+        if method == 'purchase_date':
+            return 1
+        return max(useful_life or 0, 1) * 12
+
+    def _posted_depreciation_move_count(self, unit):
+        return len(self._posted_depreciation_moves(unit))
+
+    def _posted_depreciation_moves(self, unit):
+        return self._asset_depreciation_moves(unit).filtered(lambda move: move.state == 'posted' and move.kio_depreciation_period_start and move.kio_depreciation_period_end).sorted(lambda move: (move.kio_depreciation_period_start, move.id))
+
+    def _depreciation_schedule_validation_error(self, unit, purchase_value, useful_life):
+        if useful_life <= 0:
+            return 'Useful Life must be greater than 0.'
+        if unit.residual_value < 0:
+            return 'Residual Value must not be negative.'
+        if purchase_value < unit.residual_value:
+            return 'Purchase Price must be greater than or equal to Residual Value.'
+        if not self._depreciation_start_date(unit, self._select_asset_row(self._current_asset_rows(), unit.id)):
+            return 'Depreciation Start Date is required.'
+        total_months = self._depreciation_total_months(unit.depreciation_method or 'straight_line', useful_life)
+        posted_count = self._posted_depreciation_move_count(unit)
+        if total_months <= posted_count:
+            return 'Useful Life conflicts with already posted depreciation entries. Total periods must be greater than posted period count (%s).' % posted_count
+        return False
 
     def _select_asset_row(self, rows, asset_id=False):
         if asset_id:
@@ -1034,15 +1059,18 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _depreciation_values(self, unit, purchase_value, useful_life):
         residual_value = unit.residual_value or 0.0
-        months = max(useful_life, 1) * 12
+        months = self._depreciation_total_months(unit.depreciation_method or 'straight_line', useful_life)
         max_depreciable_amount = max(purchase_value - residual_value, 0.0)
-        manual_depreciable = unit.manual_depreciable_amount
-        if manual_depreciable is False or manual_depreciable is None:
+        if unit.depreciation_method in ('straight_line', 'purchase_date'):
             depreciable_amount = max_depreciable_amount
         else:
-            depreciable_amount = min(max(manual_depreciable, 0.0), max_depreciable_amount)
+            manual_depreciable = unit.manual_depreciable_amount
+            if manual_depreciable is False or manual_depreciable is None:
+                depreciable_amount = max_depreciable_amount
+            else:
+                depreciable_amount = min(max(manual_depreciable, 0.0), max_depreciable_amount)
         monthly_amount = depreciable_amount / months if months else 0.0
-        annual_amount = monthly_amount * 12.0
+        annual_amount = depreciable_amount / useful_life if useful_life else 0.0
         ending_book_value = max(purchase_value - depreciable_amount, 0.0)
         return {
             'residual_value': residual_value,
@@ -1056,45 +1084,111 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _depreciation_schedule(self, unit, start_date, months, purchase_value, ending_book_value, monthly_amount):
         moves = self._asset_depreciation_moves(unit)
-        move_by_period = {fields.Date.to_string(move.kio_depreciation_period_start or move.date.replace(day=1)): move for move in moves if move.date}
+        if unit.depreciation_method == 'purchase_date':
+            return self._purchase_date_depreciation_schedule(unit, start_date, purchase_value, ending_book_value, moves)
+
         rows = []
         opening = purchase_value
         accumulated = 0.0
         currency = unit.currency_id or unit.company_id.currency_id
-        first_schedule_month = date_utils.start_of(start_date, 'month')
-        for index in range(months):
-            month_date = first_schedule_month + relativedelta(months=index)
-            period_start = date_utils.start_of(month_date, 'month')
-            period_end = date_utils.end_of(month_date, 'month')
-            remaining = max(opening - ending_book_value, 0.0)
-            amount = remaining if index == months - 1 else min(currency.round(monthly_amount), remaining)
+        posted_moves = self._posted_depreciation_moves(unit)
+        posted_count = len(posted_moves)
+        total_months = max(months or 0, 0)
+        for index, move in enumerate(posted_moves[:posted_count]):
+            amount = min(self._depreciation_move_amount(move), max(opening - ending_book_value, 0.0))
             accumulated += amount
-            closing = max(opening - amount, ending_book_value)
-            move = move_by_period.get(fields.Date.to_string(period_start))
-            status = self._depreciation_move_status(move)
-            rows.append({
-                'sequence': index + 1,
-                'period': period_start.strftime('%b %Y'),
-                'fromDate': self._format_date(period_start),
-                'toDate': self._format_date(period_end),
-                'fromDateRaw': period_start,
-                'toDateRaw': period_end,
-                'days': (period_end - period_start).days + 1,
-                'openingBookValue': self._format_money(opening),
-                'depreciationAmount': self._format_money(amount),
-                'depreciationAmountRaw': amount,
-                'accumulatedDepreciation': self._format_money(accumulated),
-                'accumulatedRaw': accumulated,
-                'closingBookValue': self._format_money(closing),
-                'closingRaw': closing,
-                'status': status,
-                'statusTone': self._depreciation_status_tone(status),
-                'journalEntry': move.name if move else '-',
-                'journalEntryId': move.id if move else False,
-                'moveRecord': move,
-            })
+            closing = max(opening - amount, ending_book_value, 0.0)
+            period_start = move.kio_depreciation_period_start
+            period_end = move.kio_depreciation_period_end
+            rows.append(self._depreciation_schedule_row(
+                sequence=index + 1,
+                period_start=period_start,
+                period_end=period_end,
+                opening=opening,
+                amount=amount,
+                accumulated=accumulated,
+                closing=closing,
+                move=move,
+            ))
+            opening = closing
+
+        remaining_periods = max(total_months - posted_count, 0)
+        remaining_depreciable = max(opening - ending_book_value, 0.0)
+        monthly_remaining = remaining_depreciable / remaining_periods if remaining_periods else 0.0
+        next_start = self._next_depreciation_period_start(start_date, rows[-1]['toDateRaw'] if rows else False)
+
+        for offset in range(remaining_periods):
+            sequence = posted_count + offset + 1
+            period_start = next_start if offset == 0 else date_utils.start_of(next_start + relativedelta(months=offset), 'month')
+            period_end = date_utils.end_of(period_start, 'month')
+            remaining = max(opening - ending_book_value, 0.0)
+            amount = remaining if offset == remaining_periods - 1 else min(currency.round(monthly_remaining), remaining)
+            accumulated += amount
+            closing = max(opening - amount, ending_book_value, 0.0)
+            move = self._find_depreciation_move_by_period(moves, period_start, period_end)
+            rows.append(self._depreciation_schedule_row(
+                sequence=sequence,
+                period_start=period_start,
+                period_end=period_end,
+                opening=opening,
+                amount=amount,
+                accumulated=accumulated,
+                closing=closing,
+                move=move,
+            ))
             opening = closing
         return rows
+
+    def _purchase_date_depreciation_schedule(self, unit, purchase_date, purchase_value, ending_book_value, moves):
+        amount = max(purchase_value - ending_book_value, 0.0)
+        move = self._find_depreciation_move_by_period(moves, purchase_date, purchase_date)
+        return [self._depreciation_schedule_row(
+            sequence=1,
+            period_start=purchase_date,
+            period_end=purchase_date,
+            opening=purchase_value,
+            amount=amount,
+            accumulated=amount,
+            closing=ending_book_value,
+            move=move,
+        )]
+
+    def _next_depreciation_period_start(self, start_date, last_period_end=False):
+        if last_period_end:
+            return date_utils.start_of(last_period_end + relativedelta(days=1), 'month')
+        return start_date
+
+    def _find_depreciation_move_by_period(self, moves, period_start, period_end):
+        return next((move for move in moves if move.kio_depreciation_period_start == period_start and move.kio_depreciation_period_end == period_end), False)
+
+    def _depreciation_schedule_row(self, sequence, period_start, period_end, opening, amount, accumulated, closing, move=False):
+        status = self._depreciation_move_status(move)
+        return {
+            'sequence': sequence,
+            'period': period_start.strftime('%b %Y'),
+            'fromDate': self._format_date(period_start),
+            'toDate': self._format_date(period_end),
+            'fromDateRaw': period_start,
+            'toDateRaw': period_end,
+            'days': (period_end - period_start).days + 1,
+            'openingBookValue': self._format_money(opening),
+            'depreciationAmount': self._format_money(amount),
+            'depreciationAmountRaw': amount,
+            'accumulatedDepreciation': self._format_money(accumulated),
+            'accumulatedRaw': accumulated,
+            'closingBookValue': self._format_money(closing),
+            'closingRaw': closing,
+            'status': status,
+            'statusTone': self._depreciation_status_tone(status),
+            'journalEntry': move.name if move else '-',
+            'journalEntryId': move.id if move else False,
+            'moveRecord': move,
+        }
+
+    def _depreciation_move_amount(self, move):
+        debit = sum(move.line_ids.mapped('debit'))
+        credit = sum(move.line_ids.mapped('credit'))
+        return max(debit, credit, 0.0)
 
     def _asset_depreciation_moves(self, unit):
         Move = self.env['account.move'].sudo()
@@ -1233,10 +1327,12 @@ class KioAssetDashboardService(models.AbstractModel):
         return unit.accumulated_depreciation_account_id or journal.default_account_id
 
     def _depreciation_accounts(self, journal, unit):
-        debit_account = self._product_depreciation_debit_account(unit)
-        credit_account = self._depreciation_expense_account(unit)
         if not journal:
             raise UserError('Please configure the Depreciation Expense Account, Accumulated Depreciation Account, and Depreciation Journal before generating depreciation entries.')
+        debit_account = self._depreciation_expense_account(unit)
+        credit_account = self._accumulated_depreciation_account(journal, unit)
+        if not credit_account or credit_account.deprecated:
+            raise ValidationError('Please configure the Accumulated Depreciation Account before generating depreciation entries.')
         return debit_account, credit_account
 
     def _find_depreciation_move(self, unit, schedule_line):
@@ -1257,12 +1353,15 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _ensure_depreciation_moves(self, unit, schedule, journal, post_due=False):
         today = fields.Date.context_today(self)
-        result = {'created': 0, 'posted': 0, 'existing': 0, 'errors': []}
+        result = {'created': 0, 'updated': 0, 'posted': 0, 'existing': 0, 'errors': []}
         self._depreciation_accounts(journal, unit)
         for line in schedule:
             move = line.get('moveRecord') or self._find_depreciation_move(unit, line)
             if move:
                 result['existing'] += 1
+                if move.state == 'draft':
+                    self._update_draft_depreciation_move(move, unit, line, journal)
+                    result['updated'] += 1
             else:
                 move = self._create_depreciation_move(unit, line, journal)
                 result['created'] += 1
@@ -1278,6 +1377,8 @@ class KioAssetDashboardService(models.AbstractModel):
         parts = []
         if result['created']:
             parts.append('%s depreciation journal entries created.' % result['created'])
+        if result.get('updated'):
+            parts.append('%s draft depreciation journal entries updated.' % result['updated'])
         if result['posted']:
             parts.append('%s due depreciation journal entries posted.' % result['posted'])
         if not parts:
@@ -1285,6 +1386,37 @@ class KioAssetDashboardService(models.AbstractModel):
         if result['errors']:
             parts.append('Some due entries could not be posted and remain in Draft: %s' % '; '.join(result['errors']))
         return ' '.join(parts)
+
+    def _update_draft_depreciation_move(self, move, unit, schedule_line, journal):
+        if move.state != 'draft':
+            return False
+        debit_account, credit_account = self._depreciation_accounts(journal, unit)
+        amount = schedule_line['depreciationAmountRaw']
+        period_label = schedule_line['period']
+        label = 'Depreciation - %s - %s' % (unit.asset_code, period_label)
+        move.write({
+            'date': schedule_line['toDateRaw'],
+            'journal_id': journal.id,
+            'ref': label,
+            'kio_depreciation_period_start': schedule_line['fromDateRaw'],
+            'kio_depreciation_period_end': schedule_line['toDateRaw'],
+            'kio_depreciation_sequence': schedule_line['sequence'],
+            'line_ids': [(5, 0, 0),
+                (0, 0, {
+                    'name': label,
+                    'account_id': debit_account.id,
+                    'debit': amount,
+                    'credit': 0.0,
+                }),
+                (0, 0, {
+                    'name': label,
+                    'account_id': credit_account.id,
+                    'debit': 0.0,
+                    'credit': amount,
+                }),
+            ],
+        })
+        return True
 
     def _create_depreciation_move(self, unit, schedule_line, journal):
         debit_account, credit_account = self._depreciation_accounts(journal, unit)

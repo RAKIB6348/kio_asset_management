@@ -50,7 +50,7 @@
                             <label class="kio_form_field"><span>Purchase Date <b>*</b></span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.purchaseDate" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('purchaseDate', ev)" t-on-change="(ev) => this.onAssetDateInput('purchaseDate', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
                             <label class="kio_form_field"><span>Purchase Price (৳) <b>*</b></span><input t-att-value="addAssetForm.purchasePrice" t-on-input="(ev) => this.onAssetFormInput('purchasePrice', ev)"/></label>
                             <label class="kio_form_field"><span>Warranty Expiry Date</span><div class="kio_input_icon"><input type="date" t-att-value="addAssetForm.warrantyExpiry" t-on-click="openAssetDatePicker" t-on-input="(ev) => this.onAssetDateInput('warrantyExpiry', ev)" t-on-change="(ev) => this.onAssetDateInput('warrantyExpiry', ev)"/><i class="fa fa-calendar" t-on-click="openAssetDatePicker"/></div></label>
-                            <label class="kio_form_field"><span>Condition</span><select t-att-value="addAssetForm.condition" t-on-change="(ev) => this.onAssetFormInput('condition', ev)"><option t-att-value="addAssetForm.condition" t-esc="addAssetForm.condition"/></select></label>
+                            <label class="kio_form_field"><span>Condition</span><input t-att-value="addAssetForm.condition" t-on-input="(ev) => this.onAssetFormInput('condition', ev)"/></label>
                             <label class="kio_form_field kio_span_4"><span>Description</span><textarea t-att-value="addAssetForm.description" t-on-input="(ev) => this.onAssetFormInput('description', ev)"><t t-esc="addAssetForm.description"/></textarea></label>
                         </div>
                     </article>
@@ -71,9 +71,9 @@
                         <div class="kio_form_card_header"><i class="fa fa-map-marker"/><h2>Location Information</h2></div>
                         <div class="kio_form_grid kio_form_grid_2">
                             <label class="kio_form_field"><span>Location <b>*</b></span><select t-att-value="addAssetForm.locationId || &quot;&quot;" t-on-change="onAssetLocationChange"><option value="" t-att-selected="!addAssetForm.locationId">Select Location</option><t t-foreach="locationOptions" t-as="location" t-key="location.id"><option t-att-value="location.idValue" t-att-selected="(addAssetForm.locationId || &quot;&quot;) === location.idValue" t-esc="location.name"/></t></select></label>
-                            <label class="kio_form_field"><span>Building / Floor</span><select t-att-value="addAssetForm.buildingFloor" t-on-change="(ev) => this.onAssetFormInput('buildingFloor', ev)"><option t-att-value="addAssetForm.buildingFloor" t-esc="addAssetForm.buildingFloor"/></select></label>
+                            <label class="kio_form_field"><span>Building / Floor</span><input t-att-value="addAssetForm.buildingFloor" t-on-input="(ev) => this.onAssetFormInput('buildingFloor', ev)"/></label>
                             <label class="kio_form_field"><span>Room / Area</span><input t-att-value="addAssetForm.roomArea" t-on-input="(ev) => this.onAssetFormInput('roomArea', ev)"/></label>
-                            <label class="kio_form_field"><span>Department</span><select t-att-value="addAssetForm.department" t-on-change="(ev) => this.onAssetFormInput('department', ev)"><option t-att-value="addAssetForm.department" t-esc="addAssetForm.department"/></select></label>
+                            <label class="kio_form_field"><span>Department</span><input t-att-value="addAssetForm.department" t-on-input="(ev) => this.onAssetFormInput('department', ev)"/></label>
                         </div>
                     </article>
                     <article class="kio_form_card">

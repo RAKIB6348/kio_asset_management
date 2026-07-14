@@ -193,13 +193,13 @@
                 </section>
             </main>
 
-            <footer class="kio_asset_footer">
+            <!-- <footer class="kio_asset_footer">
                 <span>© 2024 Asset Management System. All rights reserved.</span>
                 <div>
                     <span>v1.0.0</span>
                     <span><i class="fa fa-globe"/> English</span>
                 </div>
-            </footer>
+            </footer> -->
             </t>
             <t t-if="state.page === 'asset_list'" t-call="kio_asset_management.AssetListPage"/>
             <t t-if="state.page === 'add_asset'" t-call="kio_asset_management.AddAssetPage"/>

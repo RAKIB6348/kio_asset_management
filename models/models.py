@@ -1159,10 +1159,25 @@ class KioAssetDashboardService(models.AbstractModel):
         return start_date
 
     def _find_depreciation_move_by_period(self, moves, period_start, period_end):
-        return next((move for move in moves if move.kio_depreciation_period_start == period_start and move.kio_depreciation_period_end == period_end), False)
+        move = next((move for move in moves if move.kio_depreciation_period_start == period_start and move.kio_depreciation_period_end == period_end), False)
+        if move:
+            return move
+
+        fallback_moves = moves.filtered(lambda item: item.date == period_end and not item.kio_depreciation_period_start and not item.kio_depreciation_period_end)
+        return fallback_moves[:1] if fallback_moves else False
+
+    def _journal_entry_display(self, move):
+        if not move:
+            return '/'
+        if move.name and move.name != '/':
+            return move.name
+        if move.ref:
+            return move.ref
+        return 'Draft Journal Entry'
 
     def _depreciation_schedule_row(self, sequence, period_start, period_end, opening, amount, accumulated, closing, move=False):
         status = self._depreciation_move_status(move)
+        journal_entry = self._journal_entry_display(move)
         return {
             'sequence': sequence,
             'period': period_start.strftime('%b %Y'),
@@ -1180,8 +1195,13 @@ class KioAssetDashboardService(models.AbstractModel):
             'closingRaw': closing,
             'status': status,
             'statusTone': self._depreciation_status_tone(status),
-            'journalEntry': move.name if move else '-',
+            'journalEntry': journal_entry,
             'journalEntryId': move.id if move else False,
+            'moveId': move.id if move else False,
+            'moveName': move.name if move and move.name and move.name != '/' else False,
+            'moveRef': move.ref if move and move.ref else False,
+            'moveState': move.state if move else False,
+            'moveDisplayName': journal_entry,
             'moveRecord': move,
         }
 
@@ -1418,6 +1438,7 @@ class KioAssetDashboardService(models.AbstractModel):
             if post_due and move.state == 'draft' and move.date <= today:
                 try:
                     move.action_post()
+                    move.invalidate_recordset(['name', 'state'])
                     result['posted'] += 1
                 except Exception as error:
                     result['errors'].append('%s: %s' % (move.ref or move.name or line['period'], error))

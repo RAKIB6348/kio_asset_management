@@ -20,7 +20,7 @@
                     <button class="kio_depr_btn kio_depr_btn_green" type="button" t-on-click="runDepreciation">Run Depreciation</button>
                     <button class="kio_depr_btn kio_depr_btn_blue" type="button" t-on-click="createJournalEntries">Create Journal Entries</button>
                     <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="openConfigurationModal">Configuration</button>
-                    <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="moreActions">More Actions <i class="fa fa-angle-down"/></button>
+                    <!-- <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-on-click="moreActions">More Actions <i class="fa fa-angle-down"/></button> -->
                 </div>
             </header>
 

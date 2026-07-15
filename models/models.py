@@ -139,24 +139,79 @@ class KioAssetDashboardService(models.AbstractModel):
         retired_assets = len([row for row in rows if row['status'] == 'Retired'])
         scrapped_assets = len([row for row in rows if row['status'] == 'Scrapped'])
         unassigned_assets = max(total_assets - assigned_assets, 0)
-        purchase_value = sum(value.get('purchase_value', 0.0) for value in purchase_map.values())
-        current_value = purchase_value
-        depreciation_value = max(purchase_value - current_value, 0.0)
+        depreciation_totals = self._dashboard_depreciation_totals(rows)
+        purchase_value = depreciation_totals['total_purchase_value']
+        depreciation_value = depreciation_totals['accumulated_depreciation']
+        current_value = depreciation_totals['current_book_value']
 
         return {
+            'total_assets': total_assets,
+            'total_purchase_value': purchase_value,
+            'accumulated_depreciation': depreciation_value,
+            'depreciated_value': depreciation_value,
+            'current_book_value': current_value,
+            'monthly_depreciation': depreciation_totals['monthly_depreciation'],
+            'yearly_depreciation': depreciation_totals['yearly_depreciation'],
             'kpis': self._dashboard_kpis(total_assets, active_assets, assigned_assets, maintenance_assets, unassigned_assets, depreciation_value, purchase_value, current_value),
             'assetListKpis': self._asset_list_kpis(total_assets, active_assets, assigned_assets, maintenance_assets, retired_assets, scrapped_assets),
             'assetRows': rows,
             'assetDetailsByCode': details,
             'statuses': self._statuses(total_assets, active_assets, assigned_assets, maintenance_assets, unassigned_assets, retired_assets, scrapped_assets),
             'locations': self._locations(rows),
-            'depreciationSummary': self._depreciation_summary(total_assets, purchase_value, depreciation_value, current_value),
+            'depreciationSummary': self._depreciation_summary(total_assets, purchase_value, depreciation_value, current_value, depreciation_totals['monthly_depreciation'], depreciation_totals['yearly_depreciation']),
             'assignedAssets': self._recent_assigned_assets(rows),
             'employeeOptions': self._employee_options(),
             'locationOptions': self._location_options(),
             'categoryOptions': self._category_options(),
             'supplierOptions': self._supplier_options(rows),
         }
+
+    def _dashboard_depreciation_totals(self, rows):
+        active_rows = [row for row in rows if row.get('active', True)]
+        asset_unit_ids = [row['id'] for row in active_rows if row.get('id')]
+        total_purchase_value = sum((row.get('unitPrice') or 0.0) for row in active_rows)
+        totals = {
+            'total_purchase_value': total_purchase_value,
+            'accumulated_depreciation': 0.0,
+            'monthly_depreciation': 0.0,
+            'yearly_depreciation': 0.0,
+            'current_book_value': max(total_purchase_value, 0.0),
+        }
+        if not asset_unit_ids:
+            _logger.debug(
+                'Asset dashboard depreciation totals: total_purchase_value=%s posted_depreciation_record_ids=%s accumulated_depreciation=%s monthly_depreciation=%s yearly_depreciation=%s current_book_value=%s',
+                totals['total_purchase_value'], [], totals['accumulated_depreciation'], totals['monthly_depreciation'], totals['yearly_depreciation'], totals['current_book_value'],
+            )
+            return totals
+
+        today = fields.Date.context_today(self)
+        month_start = today.replace(day=1)
+        month_end = month_start + relativedelta(months=1, days=-1)
+        year_start = today.replace(month=1, day=1)
+        year_end = today.replace(month=12, day=31)
+        domain = [
+            ('move_type', '=', 'entry'),
+            ('state', '=', 'posted'),
+            ('company_id', '=', self.env.company.id),
+            ('kio_asset_unit_id', 'in', asset_unit_ids),
+        ]
+        moves = self.env['account.move'].sudo().search(domain, order='date asc, id asc')
+
+        for move in moves:
+            amount = self._depreciation_move_amount(move)
+            totals['accumulated_depreciation'] += amount
+            if move.date and month_start <= move.date <= month_end:
+                totals['monthly_depreciation'] += amount
+            if move.date and year_start <= move.date <= year_end:
+                totals['yearly_depreciation'] += amount
+
+        totals['accumulated_depreciation'] = min(totals['accumulated_depreciation'], total_purchase_value) if total_purchase_value else totals['accumulated_depreciation']
+        totals['current_book_value'] = max(total_purchase_value - totals['accumulated_depreciation'], 0.0)
+        _logger.debug(
+            'Asset dashboard depreciation totals: total_purchase_value=%s posted_depreciation_record_ids=%s accumulated_depreciation=%s monthly_depreciation=%s yearly_depreciation=%s current_book_value=%s',
+            totals['total_purchase_value'], moves.ids, totals['accumulated_depreciation'], totals['monthly_depreciation'], totals['yearly_depreciation'], totals['current_book_value'],
+        )
+        return totals
 
     def _employee_options(self):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)], order='name asc')
@@ -595,14 +650,14 @@ class KioAssetDashboardService(models.AbstractModel):
             })
         return recent
 
-    def _depreciation_summary(self, total, purchase, depreciation, current):
+    def _depreciation_summary(self, total, purchase, depreciation, current, monthly_depreciation=0.0, yearly_depreciation=0.0):
         return [
             {'label': 'Total Assets', 'value': self._format_int(total), 'icon': 'fa-calculator', 'tone': 'blue'},
             {'label': 'Total Purchase Value', 'value': self._format_money(purchase), 'icon': 'fa-shopping-bag', 'tone': 'slate'},
             {'label': 'Accumulated Depreciation', 'value': self._format_money(depreciation), 'icon': 'fa-refresh', 'tone': 'red'},
             {'label': 'Current Book Value', 'value': self._format_money(current), 'icon': 'fa-briefcase', 'tone': 'green'},
-            {'label': 'Monthly Depreciation', 'value': self._format_money(0.0), 'icon': 'fa-clock-o', 'tone': 'purple'},
-            {'label': 'Yearly Depreciation', 'value': self._format_money(0.0), 'icon': 'fa-calendar', 'tone': 'orange'},
+            {'label': 'Monthly Depreciation', 'value': self._format_money(monthly_depreciation), 'icon': 'fa-clock-o', 'tone': 'purple'},
+            {'label': 'Yearly Depreciation', 'value': self._format_money(yearly_depreciation), 'icon': 'fa-calendar', 'tone': 'orange'},
         ]
 
 

@@ -58,23 +58,25 @@
                 -->
 
                 <section class="kio_dashboard_grid">
-                    <article class="kio_panel">
+                    <article class="kio_panel asset-status-chart-card">
                         <div class="kio_panel_header">
                             <h2>Asset Status Overview</h2>
                         </div>
-                        <div class="kio_status_wrap">
-                            <div class="kio_donut_chart" aria-label="Asset status donut chart">
-                                <div>
-                                    <strong t-esc="dashboardTotalAssets"/>
-                                    <span>Total</span>
+                        <div class="asset-status-chart-body">
+                            <div class="asset-status-chart-wrapper" aria-label="Asset status donut chart">
+                                <canvas t-ref="assetStatusChart"/>
+                                <div class="asset-status-chart-center">
+                                    <div class="asset-status-center-label" t-esc="state.selectedStatusLabel"/>
+                                    <div class="asset-status-center-value" t-esc="state.selectedStatusValue"/>
                                 </div>
                             </div>
-                            <div class="kio_status_legend">
-                                <t t-foreach="statuses" t-as="status" t-key="status.label">
-                                    <div class="kio_legend_item">
-                                        <span t-attf-class="kio_dot kio_dot_#{status.tone}"/>
-                                        <span class="kio_legend_label" t-esc="status.label"/>
-                                        <strong><t t-esc="status.value"/> <small>(<t t-esc="status.percent"/>)</small></strong>
+                            <div class="asset-status-chart-legend">
+                                <t t-foreach="assetStatusLegendItems" t-as="status" t-key="status.label">
+                                    <div class="asset-status-legend-item">
+                                        <span class="asset-status-legend-dot" t-att-style="'background-color:' + status.color"/>
+                                        <span class="asset-status-legend-name" t-esc="status.label"/>
+                                        <strong t-esc="status.displayValue"/>
+                                        <span class="asset-status-legend-percent">(<t t-esc="status.percent"/>)</span>
                                     </div>
                                 </t>
                             </div>

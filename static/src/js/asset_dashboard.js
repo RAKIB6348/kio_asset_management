@@ -1,6 +1,8 @@
 /** @odoo-module **/
+/* global Chart */
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { loadJS } from "@web/core/assets";
+import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { assetListKpis, assetRows } from "./asset_list_data";
@@ -20,6 +22,14 @@ const ROUTE_KEYS = {
 
 const VALID_PAGES = new Set(["dashboard", "asset_list", "asset_details", "add_asset"]);
 const VALID_FORM_MODES = new Set(["create", "edit"]);
+const ASSET_STATUS_COLORS = {
+    Active: "#13a344",
+    Assigned: "#2082ff",
+    "Under Maintenance": "#ff7a13",
+    Unassigned: "#7039bf",
+    Retired: "#ee2f43",
+    Scrapped: "#8aa0bf",
+};
 const ASSET_DATE_FIELDS = new Set(["purchaseDate", "warrantyExpiry", "assignDate", "expectedReturnDate", "depreciationStartDate"]);
 const ASSET_TEXT_FIELDS = new Set([
     "assetCode",
@@ -57,6 +67,9 @@ export class AssetDashboard extends Component {
         this.orm = useService("orm");
         this.actionService = useService("action");
         this.router = useService("router");
+        this.assetStatusChartRef = useRef("assetStatusChart");
+        this.assetStatusChart = null;
+        this.chartJsLoaded = false;
         const context = (this.props.action && this.props.action.context) || {};
         const initialRouteState = this.getRouteState(context);
         this.state = useState({
@@ -72,6 +85,8 @@ export class AssetDashboard extends Component {
             imageVersion: 0,
             isSavingAsset: false,
             saveAssetError: "",
+            selectedStatusLabel: "Total Assets",
+            selectedStatusValue: "0",
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -118,9 +133,29 @@ export class AssetDashboard extends Component {
         this.locationOptions = [];
         this.categoryOptions = [];
         this.supplierOptions = [];
-        onWillStart(async () => this.loadDynamicAssetData());
+        onWillStart(async () => {
+            await this.loadChartJs();
+            await this.loadDynamicAssetData();
+        });
+        onMounted(() => this.renderAssetStatusChart());
+        onPatched(() => this.syncAssetStatusChartLifecycle());
+        onWillUnmount(() => this.destroyAssetStatusChart());
         useBus(this.env.bus, "ROUTE_CHANGE", () => this.restoreRouteState());
         this.updateRoute({ replace: true });
+    }
+
+    async loadChartJs() {
+        if (window.Chart) {
+            this.chartJsLoaded = true;
+            return;
+        }
+        try {
+            await loadJS("/web/static/lib/Chart/Chart.js");
+            this.chartJsLoaded = Boolean(window.Chart);
+        } catch (error) {
+            this.chartJsLoaded = false;
+            console.warn("Chart.js could not be loaded for asset status chart", error);
+        }
     }
 
     getRouteState(context = {}) {
@@ -283,16 +318,182 @@ export class AssetDashboard extends Component {
                 this.maintenanceRequests = data.maintenanceRequests || [];
                 this.depreciationSummary = data.depreciationSummary || this.depreciationSummary;
                 this.assignedAssets = data.assignedAssets || [];
+                this.resetAssetStatusCenter();
                 this.restoreSelectedAsset();
                 if (!options.skipFormRestore) {
                     this.restoreAssetForm();
                 }
+                this.renderAssetStatusChart();
             }
         } catch (error) {
             console.warn("Asset dashboard dynamic data fallback", error);
         } finally {
             this.state.loaded = true;
         }
+    }
+
+    parseCount(value) {
+        const number = Number(String(value || "0").replace(/,/g, ""));
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    get totalAssetCount() {
+        const totalKpi = this.kpis.find((kpi) => kpi.title === "Total Assets");
+        if (totalKpi) {
+            return this.parseCount(totalKpi.value);
+        }
+        return this.statuses.reduce((sum, status) => sum + this.parseCount(status.value), 0);
+    }
+
+    get assetStatusLegendItems() {
+        const total = this.totalAssetCount;
+        return this.statuses.map((status) => {
+            const value = this.parseCount(status.value);
+            return {
+                ...status,
+                value,
+                displayValue: this.formatInteger(value),
+                percent: status.percent || this.formatPercent(value, total),
+                color: ASSET_STATUS_COLORS[status.label] || "#8aa0bf",
+            };
+        });
+    }
+
+    resetAssetStatusCenter() {
+        this.state.selectedStatusLabel = "Total Assets";
+        this.state.selectedStatusValue = this.formatInteger(this.totalAssetCount);
+    }
+
+    formatInteger(value) {
+        return new Intl.NumberFormat().format(value || 0);
+    }
+
+    formatPercent(value, total) {
+        return total ? `${((value / total) * 100).toFixed(2)}%` : "0.00%";
+    }
+
+    destroyAssetStatusChart() {
+        if (this.assetStatusChart) {
+            this.assetStatusChart.destroy();
+            this.assetStatusChart = null;
+        }
+    }
+
+    syncAssetStatusChartLifecycle() {
+        if (this.state.page !== "dashboard") {
+            this.destroyAssetStatusChart();
+            return;
+        }
+        if (!this.assetStatusChart && this.assetStatusChartRef.el) {
+            this.renderAssetStatusChart();
+        }
+    }
+
+    renderAssetStatusChart() {
+        if (!this.chartJsLoaded || !this.assetStatusChartRef.el || this.state.page !== "dashboard") {
+            return;
+        }
+        this.destroyAssetStatusChart();
+
+        const legendItems = this.assetStatusLegendItems;
+        const labels = legendItems.map((item) => item.label);
+        const values = legendItems.map((item) => item.value);
+        const statusTotal = values.reduce((sum, item) => sum + item, 0);
+        const hasData = statusTotal > 0;
+        const chartData = hasData ? values : [1];
+        const chartLabels = hasData ? labels : ["No assets"];
+        const chartColors = hasData ? legendItems.map((item) => item.color) : ["#e2e8f0"];
+        const component = this;
+        const percentageLabelsPlugin = {
+            id: "assetStatusPercentageLabels",
+            afterDatasetsDraw(chart) {
+                if (!hasData) {
+                    return;
+                }
+                const dataset = chart.data.datasets[0];
+                const total = dataset.data.reduce((sum, item) => sum + Number(item || 0), 0);
+                if (!total) {
+                    return;
+                }
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.font = "700 12px Inter, Segoe UI, sans-serif";
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                chart.getDatasetMeta(0).data.forEach((arc, index) => {
+                    const value = Number(dataset.data[index] || 0);
+                    if (!value) {
+                        return;
+                    }
+                    const percentage = (value / total) * 100;
+                    const label = percentage >= 3 ? `${percentage.toFixed(1)}%` : "";
+                    if (!label) {
+                        return;
+                    }
+                    const position = arc.tooltipPosition();
+                    ctx.fillText(label, position.x, position.y);
+                });
+                ctx.restore();
+            },
+        };
+
+        const canvas = this.assetStatusChartRef.el;
+        canvas.onmouseleave = () => this.resetAssetStatusCenter();
+        this.assetStatusChart = new Chart(canvas, {
+            type: "doughnut",
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: chartData,
+                    backgroundColor: chartColors,
+                    borderColor: "#ffffff",
+                    borderWidth: 3,
+                    hoverOffset: hasData ? 8 : 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "62%",
+                interaction: {
+                    mode: "nearest",
+                    intersect: true,
+                },
+                onHover(event, activeElements) {
+                    if (!hasData || !activeElements.length) {
+                        component.resetAssetStatusCenter();
+                        return;
+                    }
+                    const index = activeElements[0].index;
+                    const item = legendItems[index];
+                    component.state.selectedStatusLabel = item.label;
+                    component.state.selectedStatusValue = item.displayValue;
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                    tooltip: {
+                        enabled: hasData,
+                        callbacks: {
+                            title(items) {
+                                const item = items && items[0];
+                                return item ? item.label : "";
+                            },
+                            label(context) {
+                                const value = Number(context.raw || 0);
+                                const total = context.dataset.data.reduce((sum, item) => sum + Number(item || 0), 0);
+                                const percentage = total ? ((value / total) * 100).toFixed(2) : "0.00";
+                                const unit = value === 1 ? "asset" : "assets";
+                                return `${component.formatInteger(value)} ${unit} (${percentage}%)`;
+                            },
+                        },
+                    },
+                },
+            },
+            plugins: [percentageLabelsPlugin],
+        });
     }
 
     get filteredAssetRows() {

@@ -20,6 +20,7 @@ Modern OWL dashboard for tracking assets, assignments, maintenance, and deprecia
         'security/ir.model.access.csv',
         'data/asset_sequence.xml',
         'data/depreciation_cron.xml',
+        'data/sync_assignment_status.xml',
         'views/dashboard_action.xml',
         'views/asset_location_views.xml',
         'views/views.xml',
@@ -44,6 +45,7 @@ Modern OWL dashboard for tracking assets, assignments, maintenance, and deprecia
             'kio_asset_management/static/src/scss/depreciation_dashboard.css',
         ],
     },
+    'post_init_hook': 'post_init_hook',
     'application': True,
     'installable': True,
 }

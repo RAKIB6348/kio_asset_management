@@ -98,6 +98,59 @@ class KioAssetUnit(models.Model):
         ('asset_code_unique', 'unique(asset_code)', 'Asset code must be unique.'),
     ]
 
+    _ASSIGNMENT_STATUS_ASSIGNED = 'Assigned'
+    _ASSIGNMENT_STATUS_AVAILABLE = 'Available'
+    _ASSIGNMENT_PROTECTED_STATUS_KEYS = {'under maintenance', 'maintenance', 'retired', 'scrapped'}
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if self.env.context.get('skip_assignment_status_sync'):
+                continue
+            if 'assigned_employee_id' in vals or 'status' not in vals:
+                vals['status'] = self._assignment_status_for_values(vals.get('assigned_employee_id'), vals.get('status'))
+        units = super().create(vals_list)
+        if not self.env.context.get('skip_assignment_status_sync'):
+            units._sync_assignment_status()
+        return units
+
+    def write(self, vals):
+        result = super().write(vals)
+        if not self.env.context.get('skip_assignment_status_sync') and ({'assigned_employee_id', 'status'} & set(vals)):
+            self._sync_assignment_status()
+        return result
+
+    @api.model
+    def _normalize_assignment_status(self, status):
+        return (status or '').strip().lower()
+
+    @api.model
+    def _is_assignment_protected_status(self, status):
+        return self._normalize_assignment_status(status) in self._ASSIGNMENT_PROTECTED_STATUS_KEYS
+
+    @api.model
+    def _assignment_status_for_values(self, assigned_employee_id=False, current_status=False):
+        if self._is_assignment_protected_status(current_status):
+            return current_status
+        if assigned_employee_id:
+            return self._ASSIGNMENT_STATUS_ASSIGNED
+        if not current_status or self._normalize_assignment_status(current_status) == 'assigned':
+            return self._ASSIGNMENT_STATUS_AVAILABLE
+        return current_status
+
+    def _sync_assignment_status(self):
+        for unit in self:
+            synced_status = unit._assignment_status_for_values(unit.assigned_employee_id.id, unit.status)
+            if synced_status != unit.status:
+                unit.with_context(skip_assignment_status_sync=True).write({'status': synced_status})
+        return True
+
+    @api.model
+    def action_sync_assignment_statuses(self):
+        units = self.sudo().with_context(active_test=False).search([])
+        units._sync_assignment_status()
+        return True
+
     @api.model
     def action_resequence_asset_codes(self):
         units = self.sudo().search([], order='create_date asc, id asc')
@@ -367,6 +420,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 supplier = self._asset_unit_supplier(unit, row)
                 expanded_row = dict(row)
                 display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
+                display_tone = self._asset_status_tone(display_status, employee)
                 expanded_row.update({
                     'id': unit.id,
                     'productId': product_id,
@@ -408,7 +462,7 @@ class KioAssetDashboardService(models.AbstractModel):
                     'residualValue': unit.residual_value or 0.0,
                     'depreciationStartDate': self._format_date(unit.depreciation_start_date),
                     'status': display_status,
-                    'tone': 'blue' if employee else row.get('tone', 'green'),
+                    'tone': display_tone,
                     'code': asset_code,
                     'rowKey': '%s-%s' % (asset_code, index),
                     'qtyIndex': index,
@@ -417,6 +471,18 @@ class KioAssetDashboardService(models.AbstractModel):
                 })
                 expanded.append(expanded_row)
         return expanded
+
+    def _asset_status_tone(self, status, employee=False):
+        status_key = (status or '').strip().lower()
+        if status_key == 'assigned':
+            return 'blue'
+        if status_key in ('under maintenance', 'maintenance'):
+            return 'orange'
+        if status_key == 'retired':
+            return 'red'
+        if status_key == 'scrapped':
+            return 'slate'
+        return 'blue' if employee else 'green'
 
     def _asset_unit_supplier(self, unit, row):
         if unit.supplier_id:
@@ -639,7 +705,8 @@ class KioAssetDashboardService(models.AbstractModel):
 
     def _recent_assigned_assets(self, rows):
         recent = []
-        for row in rows[:5]:
+        assigned_rows = [row for row in rows if row.get('assignedTo') != '-']
+        for row in assigned_rows[:5]:
             recent.append({
                 'asset': row['name'],
                 'code': row['code'],

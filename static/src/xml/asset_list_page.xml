@@ -53,7 +53,12 @@
                     </label>
                     <label class="kio_filter_field">
                         <span>Category</span>
-                        <select><option>All Categories</option></select>
+                        <select t-att-value="state.assetCategoryId || ''" t-on-change="onAssetCategoryFilterChange">
+                            <option value="">All Categories</option>
+                            <t t-foreach="state.assetCategoryOptions" t-as="category" t-key="category.id">
+                                <option t-att-value="category.idValue" t-att-selected="state.assetCategoryId === category.id" t-esc="category.label"/>
+                            </t>
+                        </select>
                     </label>
                     <label class="kio_filter_field">
                         <span>Status</span>

@@ -14,6 +14,7 @@ const ROUTE_KEYS = {
     previousPage: "kio_asset_previous_page",
     selectedAssetId: "kio_asset_id",
     assetSearch: "kio_asset_search",
+    assetCategory: "kio_asset_category_id",
     assetLocation: "kio_asset_location_id",
     assetEmployee: "kio_asset_employee_id",
     assetPage: "kio_asset_page_no",
@@ -79,8 +80,8 @@ export class AssetDashboard extends Component {
             previousPage: initialRouteState.previousPage,
             loaded: false,
             assetSearch: initialRouteState.assetSearch,
+            assetCategoryId: initialRouteState.assetCategoryId,
             assetLocationId: initialRouteState.assetLocationId,
-            assetCategoryId: false,
             assetStatus: "",
             selectedEmployeeId: initialRouteState.selectedEmployeeId,
             assetPage: initialRouteState.assetPage,
@@ -93,6 +94,7 @@ export class AssetDashboard extends Component {
             saveAssetError: "",
             selectedStatusLabel: "Total Assets",
             selectedStatusValue: "0",
+            assetCategoryOptions: [],
             assetLocationOptions: [],
             assetEmployeeOptions: [],
         });
@@ -175,6 +177,7 @@ export class AssetDashboard extends Component {
             previousPage,
             selectedAssetId: this.parsePositiveNumber(hash[ROUTE_KEYS.selectedAssetId] || context.asset_id),
             assetSearch: hash[ROUTE_KEYS.assetSearch] || "",
+            assetCategoryId: this.parsePositiveNumber(hash[ROUTE_KEYS.assetCategory] || context.category_id),
             assetLocationId: this.parsePositiveNumber(hash[ROUTE_KEYS.assetLocation] || context.location_id),
             selectedEmployeeId: this.parsePositiveNumber(hash[ROUTE_KEYS.assetEmployee] || context.employee_id),
             assetPage: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPage]) || 1,
@@ -205,6 +208,7 @@ export class AssetDashboard extends Component {
             [ROUTE_KEYS.previousPage]: this.state.previousPage && this.state.previousPage !== this.state.page ? this.state.previousPage : undefined,
             [ROUTE_KEYS.selectedAssetId]: (isDetails || isEdit) && this.state.selectedAssetId ? this.state.selectedAssetId : undefined,
             [ROUTE_KEYS.assetSearch]: this.state.assetSearch || undefined,
+            [ROUTE_KEYS.assetCategory]: this.state.assetCategoryId || undefined,
             [ROUTE_KEYS.assetLocation]: this.state.assetLocationId || undefined,
             [ROUTE_KEYS.assetEmployee]: this.state.selectedEmployeeId || undefined,
             [ROUTE_KEYS.assetPage]: this.state.assetPage > 1 ? this.state.assetPage : undefined,
@@ -223,6 +227,7 @@ export class AssetDashboard extends Component {
         this.state.page = routeState.page;
         this.state.previousPage = routeState.previousPage;
         this.state.assetSearch = routeState.assetSearch;
+        this.state.assetCategoryId = routeState.assetCategoryId;
         this.state.assetLocationId = routeState.assetLocationId;
         this.state.selectedEmployeeId = routeState.selectedEmployeeId;
         this.state.assetPage = routeState.assetPage;
@@ -320,8 +325,10 @@ export class AssetDashboard extends Component {
                 this.categoryOptions = (data.categoryOptions || this.categoryOptions).map((category) => ({
                     ...category,
                     idValue: `${category.id}`,
-                    label: category.name,
+                    label: category.complete_name || category.name,
+                    parentId: category.parent_id || false,
                 }));
+                this.state.assetCategoryOptions = [...this.categoryOptions];
                 this.supplierOptions = (data.supplierOptions || this.supplierOptions).map((supplier) => ({
                     ...supplier,
                     idValue: `${supplier.id}`,
@@ -539,7 +546,7 @@ export class AssetDashboard extends Component {
         const selectedEmployeeId = this.parsePositiveNumber(this.state.selectedEmployeeId);
         const selectedStatus = String(this.state.assetStatus || "").trim();
 
-        if (selectedCategoryId && Number(row.categoryId || 0) !== selectedCategoryId) {
+        if (selectedCategoryId && !this.assetCategoryMatchesSelection(row.categoryId, selectedCategoryId)) {
             return false;
         }
         if (selectedStatus && String(row.status || "") !== selectedStatus) {
@@ -552,6 +559,37 @@ export class AssetDashboard extends Component {
             return false;
         }
         return true;
+    }
+
+    assetCategoryMatchesSelection(rowCategoryId, selectedCategoryId) {
+        const categoryId = this.parsePositiveNumber(rowCategoryId);
+        if (!categoryId) {
+            return false;
+        }
+        return this.assetCategoryDescendantIds(selectedCategoryId).has(categoryId);
+    }
+
+    assetCategoryDescendantIds(categoryId) {
+        const selectedCategoryId = this.parsePositiveNumber(categoryId);
+        const descendants = new Set();
+        if (!selectedCategoryId) {
+            return descendants;
+        }
+        descendants.add(selectedCategoryId);
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (const category of this.state.assetCategoryOptions) {
+                const currentId = this.parsePositiveNumber(category.id);
+                const parentId = this.parsePositiveNumber(category.parentId || category.parent_id);
+                if (currentId && parentId && descendants.has(parentId) && !descendants.has(currentId)) {
+                    descendants.add(currentId);
+                    changed = true;
+                }
+            }
+        }
+        return descendants;
     }
 
     get displayAssetRows() {
@@ -614,6 +652,12 @@ export class AssetDashboard extends Component {
 
     onAssetSearch(event) {
         this.state.assetSearch = event.target.value;
+        this.state.assetPage = 1;
+        this.updateRoute({ replace: true });
+    }
+
+    onAssetCategoryFilterChange(event) {
+        this.state.assetCategoryId = this.parsePositiveNumber(event.target.value) || false;
         this.state.assetPage = 1;
         this.updateRoute({ replace: true });
     }

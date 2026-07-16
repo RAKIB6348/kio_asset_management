@@ -280,8 +280,29 @@ class KioAssetDashboardService(models.AbstractModel):
         return [{'id': location.id, 'name': location.name} for location in locations]
 
     def _category_options(self):
-        categories = self.env['product.category'].sudo().search([], order='complete_name asc, name asc')
-        return [{'id': category.id, 'name': category.display_name} for category in categories]
+        return self._asset_category_options()
+
+    def _asset_root_category(self):
+        category = self.env['product.category'].sudo().search([('name', '=', 'Asset Category')], limit=1)
+        if not category:
+            _logger.warning('Asset Management dashboard: product.category named "Asset Category" was not found. Category filter options will be empty.')
+        return category
+
+    def _asset_category_options(self):
+        asset_root_category = self._asset_root_category()
+        if not asset_root_category:
+            return []
+
+        categories = self.env['product.category'].sudo().search(
+            [('id', 'child_of', asset_root_category.id)],
+            order='complete_name asc',
+        )
+        return [{
+            'id': category.id,
+            'name': category.name,
+            'complete_name': category.complete_name,
+            'parent_id': category.parent_id.id or False,
+        } for category in categories]
 
     def _supplier_options(self, rows=None):
         supplier_ids = [row.get('supplierId') for row in (rows or []) if row.get('supplierId')]
@@ -290,10 +311,10 @@ class KioAssetDashboardService(models.AbstractModel):
         return [{'id': partner.id, 'name': partner.display_name} for partner in partners]
 
     def _get_asset_products(self):
-        category = self.env['product.category'].search([('name', '=', 'Asset Category')], limit=1)
+        category = self._asset_root_category()
         if not category:
             return self.env['product.product']
-        category_ids = self.env['product.category'].search([('id', 'child_of', category.id)]).ids
+        category_ids = self.env['product.category'].sudo().search([('id', 'child_of', category.id)]).ids
         return self.env['product.product'].search([('categ_id', 'in', category_ids), ('active', '=', True)], order='create_date desc, id desc')
 
     def _get_purchase_financials(self, products):

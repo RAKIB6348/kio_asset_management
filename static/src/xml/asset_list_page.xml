@@ -74,7 +74,7 @@
                     <div class="kio_table_toolbar">
                         <p t-esc="assetListShowingText"/>
                         <div>
-                            <button class="kio_soft_btn" type="button"><i class="fa fa-download"/> Import</button>
+                            <button class="kio_soft_btn" type="button"><i class="fa fa-download"/> Download</button>
                             <button class="kio_soft_btn" type="button"><i class="fa fa-upload"/> Export</button>
                             <!-- <button class="kio_primary_btn" type="button" t-on-click="openAddAsset"><i class="fa fa-plus"/> Add Asset</button> -->
                         </div>

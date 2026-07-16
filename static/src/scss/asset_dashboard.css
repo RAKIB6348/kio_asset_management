@@ -126,7 +126,7 @@
 
 .kio_kpi_grid {
     display: grid;
-    grid-template-columns: repeat(8, minmax(148px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
 }
 
@@ -140,6 +140,7 @@
 
 .kio_kpi_card {
     display: flex;
+    align-items: flex-start;
     gap: 14px;
     min-height: 130px;
     padding: 18px 16px;
@@ -166,6 +167,7 @@
 }
 
 .kio_kpi_body {
+    flex: 1 1 auto;
     min-width: 0;
 }
 
@@ -178,10 +180,16 @@
 
 .kio_kpi_body strong {
     display: block;
+    width: 100%;
     color: #10213f;
-    font-size: 27px;
+    font-size: clamp(18px, 1.3vw, 26px);
     font-weight: 800;
-    line-height: 1;
+    line-height: 1.2;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
 }
 
 .kio_kpi_body p {
@@ -645,12 +653,6 @@
     color: #13a344 !important;
 }
 
-@media (max-width: 1500px) {
-    .kio_kpi_grid {
-        grid-template-columns: repeat(4, minmax(170px, 1fr));
-    }
-}
-
 @media (max-width: 1180px) {
     .kio_asset_header {
         align-items: flex-start;
@@ -675,7 +677,6 @@
         padding-right: 16px;
     }
 
-    .kio_kpi_grid,
     .kio_action_row {
         grid-template-columns: 1fr;
     }
@@ -754,7 +755,6 @@
 }
 
 .kio_kpi_body h2,
-.kio_kpi_body strong,
 .kio_panel_header h2,
 .asset-status-legend-name,
 .kio_count_item span:nth-child(2),
@@ -773,8 +773,8 @@
 }
 
 @media (min-width: 1600px) {
-    .kio_kpi_grid {
-        grid-template-columns: repeat(8, minmax(0, 1fr));
+    .kio_kpi_body strong {
+        font-size: clamp(20px, 1.25vw, 26px);
     }
 }
 
@@ -784,10 +784,6 @@
     .kio_asset_footer {
         padding-left: 24px;
         padding-right: 24px;
-    }
-
-    .kio_kpi_grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }
 
@@ -829,6 +825,10 @@
 @media (max-width: 768px) {
     .kio_asset_header {
         position: static;
+    }
+
+    .kio_kpi_grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .kio_dashboard_grid {
@@ -939,7 +939,7 @@
     }
 
     .kio_kpi_body strong {
-        font-size: 23px;
+        font-size: clamp(18px, 4.8vw, 22px);
     }
 
     .kio_asset_header_tools {

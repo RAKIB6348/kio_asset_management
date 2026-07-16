@@ -55,6 +55,7 @@ class KioAssetUnit(models.Model):
     purchase_date = fields.Date(string="Purchase Date")
     purchase_price = fields.Monetary(string="Purchase Price", currency_field='currency_id')
     warranty_expiry_date = fields.Date(string="Warranty Expiry Date")
+    condition_id = fields.Many2one('kio.asset.condition', string="Condition", index=True, ondelete='restrict')
     condition = fields.Char(string="Condition")
     description = fields.Text(string="Description")
     location = fields.Char(string="Legacy Location")
@@ -225,6 +226,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'assignedEmployeeOptions': self._employee_filter_options(),
             'locationOptions': self._location_options(),
             'categoryOptions': self._category_options(),
+            'conditionOptions': self._condition_options(),
             'supplierOptions': self._supplier_options(rows),
         }
 
@@ -286,6 +288,12 @@ class KioAssetDashboardService(models.AbstractModel):
     def _location_options(self):
         locations = self.env['kio.asset.location'].sudo().search([('active', '=', True)], order='name asc')
         return [{'id': location.id, 'name': location.name} for location in locations]
+
+    def _condition_options(self):
+        Condition = self.env['kio.asset.condition'].sudo()
+        order = 'sequence asc, name asc' if 'sequence' in Condition._fields else 'name asc'
+        conditions = Condition.search([('active', '=', True)], order=order)
+        return [{'id': condition.id, 'name': condition.name} for condition in conditions]
 
     def _category_options(self):
         return self._asset_category_options()
@@ -448,6 +456,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 location = unit.location_id
                 category = self._asset_unit_category(unit, row)
                 supplier = self._asset_unit_supplier(unit, row)
+                condition = unit.condition_id
                 expanded_row = dict(row)
                 display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
                 display_tone = self._asset_status_tone(display_status, employee)
@@ -470,7 +479,8 @@ class KioAssetDashboardService(models.AbstractModel):
                     'price': self._format_money(unit.purchase_price) if unit.purchase_price else row.get('price'),
                     'unitPrice': unit.purchase_price if unit.purchase_price else row.get('unitPrice'),
                     'warrantyExpiry': self._format_date(unit.warranty_expiry_date),
-                    'condition': unit.condition or ('Used' if display_status == 'Retired' else 'New'),
+                    'conditionId': condition.id if condition else False,
+                    'condition': condition.name if condition else (unit.condition or '-'),
                     'description': unit.description or row.get('name'),
                     'location': location.display_name if location else (unit.location or row.get('location')),
                     'locationId': location.id if location else False,
@@ -665,7 +675,8 @@ class KioAssetDashboardService(models.AbstractModel):
             'status': row['status'],
             'statusTone': row['tone'],
             'barcode': row.get('barcode') or row['serial'],
-            'condition': row.get('condition') or 'New',
+            'conditionId': row.get('conditionId') or False,
+            'condition': row.get('condition') or '-',
             'description': row.get('description') or row['name'],
             'tagsNotes': row.get('tagsNotes') or '',
             'supplierId': row.get('supplierId') or False,

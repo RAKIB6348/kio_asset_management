@@ -46,7 +46,6 @@ const ASSET_TEXT_FIELDS = new Set([
     "assetType",
     "purchasePrice",
     "warrantyExpiry",
-    "condition",
     "description",
     "location",
     "buildingFloor",
@@ -99,6 +98,7 @@ export class AssetDashboard extends Component {
             assetLocationOptions: [],
             assetEmployeeOptions: [],
             assetStatusOptions: [],
+            conditions: [],
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -285,7 +285,8 @@ export class AssetDashboard extends Component {
             assignDate: this.normalizeDateInput(row.assignDate),
             expectedReturnDate: this.normalizeDateInput(row.expectedReturnDate),
             depreciationStartDate: this.normalizeDateInput(row.depreciationStartDate),
-            condition: row.condition || "",
+            condition: row.condition || "-",
+            conditionId: row.conditionId ? String(row.conditionId) : "",
             description: row.description || "",
             supplier: this.many2oneName(supplierValue, row.supplier || row.vendor || ""),
             supplierId: this.many2oneId(supplierValue),
@@ -334,6 +335,10 @@ export class AssetDashboard extends Component {
                     parentId: category.parent_id || false,
                 }));
                 this.state.assetCategoryOptions = [...this.categoryOptions];
+                this.state.conditions = (data.conditionOptions || []).map((condition) => ({
+                    ...condition,
+                    idValue: `${condition.id}`,
+                }));
                 this.supplierOptions = (data.supplierOptions || this.supplierOptions).map((supplier) => ({
                     ...supplier,
                     idValue: `${supplier.id}`,
@@ -777,6 +782,9 @@ export class AssetDashboard extends Component {
         this.state.saveAssetError = "";
 
         if (this.state.assetFormMode === "edit" && this.state.editingAssetId) {
+            if (!this.validateAssetForm()) {
+                return;
+            }
             this.state.isSavingAsset = true;
             try {
                 const assetId = Number(this.state.editingAssetId);
@@ -803,6 +811,9 @@ export class AssetDashboard extends Component {
         }
 
         // Existing Add Asset flow is intentionally unchanged by the edit-save fix.
+        if (!this.validateAssetForm()) {
+            return;
+        }
         console.info("Save Asset", this.addAssetForm);
         this.closeAddAsset();
     }
@@ -827,6 +838,14 @@ export class AssetDashboard extends Component {
         const category = this.categoryOptions.find((item) => item.idValue === categoryId);
         this.addAssetForm.categoryId = categoryId;
         this.addAssetForm.category = category ? category.name : this.addAssetForm.category;
+    }
+
+    onAssetConditionChange(event) {
+        const conditionId = event.target.value || "";
+        const condition = this.state.conditions.find((item) => item.idValue === conditionId);
+        this.addAssetForm.conditionId = conditionId;
+        this.addAssetForm.condition = condition ? condition.name : "";
+        this.state.saveAssetError = "";
     }
 
     onAssetFormInput(fieldName, event) {
@@ -884,7 +903,7 @@ export class AssetDashboard extends Component {
             purchase_date: this.normalizeDateInput(this.addAssetForm.purchaseDate) || false,
             purchase_price: this.parseNumberInput(this.addAssetForm.purchasePrice),
             warranty_expiry_date: this.normalizeDateInput(this.addAssetForm.warrantyExpiry) || false,
-            condition: this.optionalText(this.addAssetForm.condition),
+            condition_id: this.addAssetForm.conditionId ? Number(this.addAssetForm.conditionId) : false,
             description: this.optionalText(this.addAssetForm.description),
             location_id: this.addAssetForm.locationId ? Number(this.addAssetForm.locationId) : false,
             location: this.optionalText(this.addAssetForm.location),
@@ -909,6 +928,15 @@ export class AssetDashboard extends Component {
             vals.image_1920 = this.addAssetForm.imageBinary;
         }
         return vals;
+    }
+
+    validateAssetForm() {
+        if (!this.addAssetForm.conditionId) {
+            this.state.saveAssetError = "Please select an asset condition.";
+            return false;
+        }
+        this.state.saveAssetError = "";
+        return true;
     }
 
     many2oneId(value) {
@@ -972,6 +1000,7 @@ export class AssetDashboard extends Component {
             purchasePrice: "",
             warrantyExpiry: "",
             condition: "",
+            conditionId: "",
             description: "",
             location: "",
             locationId: "",
@@ -1034,7 +1063,8 @@ export class AssetDashboard extends Component {
             purchaseDate: this.normalizeDateInput(this.selectedAsset.purchaseDate),
             purchasePrice: this.moneyToInput(this.selectedAsset.purchasePrice),
             warrantyExpiry: this.normalizeDateInput(this.selectedAsset.warrantyExpiry),
-            condition: this.selectedAsset.condition,
+            condition: this.selectedAsset.condition || "-",
+            conditionId: this.selectedAsset.conditionId ? String(this.selectedAsset.conditionId) : "",
             description: this.selectedAsset.description,
             location: this.selectedAsset.location.location,
             locationId: this.selectedAsset.location.locationId ? String(this.selectedAsset.location.locationId) : "",

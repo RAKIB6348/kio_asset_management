@@ -14,6 +14,7 @@ export const addAssetFormState = {
     purchasePrice: "",
     warrantyExpiry: "",
     condition: "",
+    conditionId: "",
     description: "",
     location: "",
     locationId: "",

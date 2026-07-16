@@ -197,6 +197,13 @@ class KioAssetDashboardService(models.AbstractModel):
         depreciation_value = depreciation_totals['accumulated_depreciation']
         current_value = depreciation_totals['current_book_value']
 
+        status_set = set()
+        for row in rows:
+            status = (row.get('status') or '').strip()
+            if status:
+                status_set.add(status)
+        status_options = sorted(status_set)
+
         return {
             'total_assets': total_assets,
             'total_purchase_value': purchase_value,
@@ -210,6 +217,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'assetRows': rows,
             'assetDetailsByCode': details,
             'statuses': self._statuses(total_assets, active_assets, assigned_assets, maintenance_assets, unassigned_assets, retired_assets, scrapped_assets),
+            'statusOptions': status_options,
             'locations': self._locations(rows),
             'depreciationSummary': self._depreciation_summary(total_assets, purchase_value, depreciation_value, current_value, depreciation_totals['monthly_depreciation'], depreciation_totals['yearly_depreciation']),
             'assignedAssets': self._recent_assigned_assets(rows),

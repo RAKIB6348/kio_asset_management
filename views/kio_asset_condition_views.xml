@@ -1,0 +1,69 @@
+<odoo>
+    <!-- Tree/List View -->
+    <record id="view_kio_asset_condition_tree" model="ir.ui.view">
+        <field name="name">kio.asset.condition.tree</field>
+        <field name="model">kio.asset.condition</field>
+        <field name="arch" type="xml">
+            <tree string="Asset Conditions">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_kio_asset_condition_form" model="ir.ui.view">
+        <field name="name">kio.asset.condition.form</field>
+        <field name="model">kio.asset.condition</field>
+        <field name="arch" type="xml">
+            <form string="Asset Condition">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object"
+                                class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button"
+                                   options="{'terminology': 'archive'}"/>
+                        </button>
+                    </div>
+                    <group>
+                        <field name="name"/>
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_kio_asset_condition_search" model="ir.ui.view">
+        <field name="name">kio.asset.condition.search</field>
+        <field name="model">kio.asset.condition</field>
+        <field name="arch" type="xml">
+            <search string="Search Asset Conditions">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_kio_asset_condition" model="ir.actions.act_window">
+        <field name="name">Asset Conditions</field>
+        <field name="res_model">kio.asset.condition</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_kio_asset_condition_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Asset Condition
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_kio_asset_condition"
+              name="Asset Conditions"
+              action="action_kio_asset_condition"
+              parent="menu_asset_management_configuration"
+              sequence="20"/>
+</odoo>

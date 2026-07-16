@@ -62,7 +62,12 @@
                     </label>
                     <label class="kio_filter_field">
                         <span>Status</span>
-                        <select><option>All Status</option></select>
+                        <select t-att-value="state.assetStatus || ''" t-on-change="onAssetStatusFilterChange">
+                            <option value="">All Status</option>
+                            <t t-foreach="state.assetStatusOptions" t-as="statusOption" t-key="statusOption.value">
+                                <option t-att-value="statusOption.value" t-att-selected="state.assetStatus === statusOption.value" t-esc="statusOption.label"/>
+                            </t>
+                        </select>
                     </label>
                     <label class="kio_filter_field">
                         <span>Location</span>

@@ -61,7 +61,12 @@
                     </label>
                     <label class="kio_filter_field">
                         <span>Location</span>
-                        <select><option>All Locations</option></select>
+                        <select t-att-value="state.assetLocationId || ''" t-on-change="onAssetLocationFilterChange">
+                            <option value="">All Locations</option>
+                            <t t-foreach="state.assetLocationOptions" t-as="location" t-key="location.id">
+                                <option t-att-value="location.idValue" t-att-selected="state.assetLocationId === location.id" t-esc="location.name"/>
+                            </t>
+                        </select>
                     </label>
                     <label class="kio_filter_field">
                         <span>Assigned To</span>

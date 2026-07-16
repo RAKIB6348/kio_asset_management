@@ -14,6 +14,7 @@ const ROUTE_KEYS = {
     previousPage: "kio_asset_previous_page",
     selectedAssetId: "kio_asset_id",
     assetSearch: "kio_asset_search",
+    assetLocation: "kio_asset_location_id",
     assetPage: "kio_asset_page_no",
     assetPageSize: "kio_asset_page_size",
     assetFormMode: "kio_asset_form_mode",
@@ -77,6 +78,10 @@ export class AssetDashboard extends Component {
             previousPage: initialRouteState.previousPage,
             loaded: false,
             assetSearch: initialRouteState.assetSearch,
+            assetLocationId: initialRouteState.assetLocationId,
+            assetCategoryId: false,
+            assetStatus: "",
+            assetAssignedToId: false,
             assetPage: initialRouteState.assetPage,
             assetPageSize: initialRouteState.assetPageSize,
             assetFormMode: initialRouteState.assetFormMode,
@@ -87,6 +92,7 @@ export class AssetDashboard extends Component {
             saveAssetError: "",
             selectedStatusLabel: "Total Assets",
             selectedStatusValue: "0",
+            assetLocationOptions: [],
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -167,6 +173,7 @@ export class AssetDashboard extends Component {
             previousPage,
             selectedAssetId: this.parsePositiveNumber(hash[ROUTE_KEYS.selectedAssetId] || context.asset_id),
             assetSearch: hash[ROUTE_KEYS.assetSearch] || "",
+            assetLocationId: this.parsePositiveNumber(hash[ROUTE_KEYS.assetLocation] || context.location_id),
             assetPage: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPage]) || 1,
             assetPageSize: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPageSize]) || 10,
             assetFormMode: this.sanitizeFormMode(hash[ROUTE_KEYS.assetFormMode]),
@@ -195,6 +202,7 @@ export class AssetDashboard extends Component {
             [ROUTE_KEYS.previousPage]: this.state.previousPage && this.state.previousPage !== this.state.page ? this.state.previousPage : undefined,
             [ROUTE_KEYS.selectedAssetId]: (isDetails || isEdit) && this.state.selectedAssetId ? this.state.selectedAssetId : undefined,
             [ROUTE_KEYS.assetSearch]: this.state.assetSearch || undefined,
+            [ROUTE_KEYS.assetLocation]: this.state.assetLocationId || undefined,
             [ROUTE_KEYS.assetPage]: this.state.assetPage > 1 ? this.state.assetPage : undefined,
             [ROUTE_KEYS.assetPageSize]: this.state.assetPageSize !== 10 ? this.state.assetPageSize : undefined,
             [ROUTE_KEYS.assetFormMode]: this.state.page === "add_asset" ? this.state.assetFormMode : undefined,
@@ -211,6 +219,7 @@ export class AssetDashboard extends Component {
         this.state.page = routeState.page;
         this.state.previousPage = routeState.previousPage;
         this.state.assetSearch = routeState.assetSearch;
+        this.state.assetLocationId = routeState.assetLocationId;
         this.state.assetPage = routeState.assetPage;
         this.state.assetPageSize = routeState.assetPageSize;
         this.state.assetFormMode = routeState.assetFormMode;
@@ -297,6 +306,7 @@ export class AssetDashboard extends Component {
                     ...location,
                     idValue: `${location.id}`,
                 }));
+                this.state.assetLocationOptions = [...this.locationOptions];
                 this.categoryOptions = (data.categoryOptions || this.categoryOptions).map((category) => ({
                     ...category,
                     idValue: `${category.id}`,
@@ -498,16 +508,40 @@ export class AssetDashboard extends Component {
 
     get filteredAssetRows() {
         const term = (this.state.assetSearch || "").trim().toLowerCase();
-        if (!term) {
-            return this.assetRows;
-        }
         const compactTerm = term.replace(/[^a-z0-9]/g, "");
         return this.assetRows.filter((row) => {
+            if (!this.matchesSelectedAssetFilters(row)) {
+                return false;
+            }
+            if (!term) {
+                return true;
+            }
             const assetCode = String(row.code || "").toLowerCase();
             const compactAssetCode = assetCode.replace(/[^a-z0-9]/g, "");
             const assetName = String(row.name || row.assetName || row.display_name || row.displayName || "").toLowerCase();
             return assetCode.includes(term) || compactAssetCode.includes(compactTerm) || assetName.includes(term);
         });
+    }
+
+    matchesSelectedAssetFilters(row) {
+        const selectedCategoryId = this.parsePositiveNumber(this.state.assetCategoryId);
+        const selectedLocationId = this.parsePositiveNumber(this.state.assetLocationId);
+        const selectedEmployeeId = this.parsePositiveNumber(this.state.assetAssignedToId);
+        const selectedStatus = String(this.state.assetStatus || "").trim();
+
+        if (selectedCategoryId && Number(row.categoryId || 0) !== selectedCategoryId) {
+            return false;
+        }
+        if (selectedStatus && String(row.status || "") !== selectedStatus) {
+            return false;
+        }
+        if (selectedLocationId && Number(row.locationId || 0) !== selectedLocationId) {
+            return false;
+        }
+        if (selectedEmployeeId && Number(row.assignedToId || 0) !== selectedEmployeeId) {
+            return false;
+        }
+        return true;
     }
 
     get displayAssetRows() {
@@ -570,6 +604,12 @@ export class AssetDashboard extends Component {
 
     onAssetSearch(event) {
         this.state.assetSearch = event.target.value;
+        this.state.assetPage = 1;
+        this.updateRoute({ replace: true });
+    }
+
+    onAssetLocationFilterChange(event) {
+        this.state.assetLocationId = this.parsePositiveNumber(event.target.value) || false;
         this.state.assetPage = 1;
         this.updateRoute({ replace: true });
     }

@@ -271,12 +271,8 @@ class KioAssetDashboardService(models.AbstractModel):
         return [{'id': employee.id, 'name': employee.name, 'employeeCode': employee.identification_id or employee.barcode or '-'} for employee in employees]
 
     def _location_options(self):
-        company = self.env.company
-        locations = self.env['kio.asset.location'].sudo().search([
-            ('active', '=', True),
-            ('company_id', 'in', [company.id, False]),
-        ], order='name asc')
-        return [{'id': location.id, 'name': location.display_name, 'code': location.code or '', 'parentId': location.parent_id.id or False, 'companyId': location.company_id.id or False} for location in locations]
+        locations = self.env['kio.asset.location'].sudo().search([('active', '=', True)], order='name asc')
+        return [{'id': location.id, 'name': location.name} for location in locations]
 
     def _category_options(self):
         categories = self.env['product.category'].sudo().search([], order='complete_name asc, name asc')

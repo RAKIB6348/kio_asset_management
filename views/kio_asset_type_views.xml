@@ -3,7 +3,7 @@
         <field name="name">kio.asset.type.tree</field>
         <field name="model">kio.asset.type</field>
         <field name="arch" type="xml">
-            <tree string="Asset Types">
+            <tree string="Asset Types" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>

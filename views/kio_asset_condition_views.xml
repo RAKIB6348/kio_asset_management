@@ -4,7 +4,7 @@
         <field name="name">kio.asset.condition.tree</field>
         <field name="model">kio.asset.condition</field>
         <field name="arch" type="xml">
-            <tree string="Asset Conditions">
+            <tree string="Asset Conditions" editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>

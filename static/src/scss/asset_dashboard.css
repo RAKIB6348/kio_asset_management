@@ -234,7 +234,7 @@
 
 .kio_dashboard_grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
     overflow: visible;
     margin-top: 13px;
@@ -676,7 +676,6 @@
     }
 
     .kio_kpi_grid,
-    .kio_dashboard_grid,
     .kio_action_row {
         grid-template-columns: 1fr;
     }
@@ -1038,11 +1037,3 @@
     }
 }
 
-
-/* Mobile labels for the second dashboard data table. */
-@media (max-width: 768px) {
-    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(1)::before { content: "Request"; }
-    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(2)::before { content: "Asset"; }
-    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(3)::before { content: "Requested By"; }
-    .kio_dashboard_grid .kio_panel:nth-child(5) .kio_table td:nth-child(4)::before { content: "Status"; }
-}

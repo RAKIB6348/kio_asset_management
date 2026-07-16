@@ -109,23 +109,6 @@
 
                     <article class="kio_panel">
                         <div class="kio_panel_header">
-                            <h2>Maintenance Requests</h2>
-                            <button type="button">View all</button>
-                        </div>
-                        <div class="kio_count_list">
-                            <t t-if="maintenanceCounts.length" t-foreach="maintenanceCounts" t-as="item" t-key="item.label">
-                                <div class="kio_count_item">
-                                    <span t-attf-class="kio_dot kio_dot_#{item.tone}"/>
-                                    <span t-esc="item.label"/>
-                                    <strong t-esc="item.value"/>
-                                </div>
-                            </t>
-                            <div t-if="!maintenanceCounts.length" class="kio_count_item"><span>No data available</span><strong>0</strong></div>
-                        </div>
-                    </article>
-
-                    <article class="kio_panel">
-                        <div class="kio_panel_header">
                             <h2>Recent Assigned Assets</h2>
                             <button type="button">View all</button>
                         </div>
@@ -145,31 +128,6 @@
                                         </tr>
                                     </t>
                                     <tr t-if="!assignedAssets.length"><td colspan="5">No data available</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </article>
-
-                    <article class="kio_panel">
-                        <div class="kio_panel_header">
-                            <h2>Recent Maintenance Requests</h2>
-                            <button type="button">View all</button>
-                        </div>
-                        <div class="kio_table_wrap">
-                            <table class="kio_table">
-                                <thead>
-                                    <tr><th>Request</th><th>Asset</th><th>Requested By</th><th>Status</th></tr>
-                                </thead>
-                                <tbody>
-                                    <t t-if="maintenanceRequests.length" t-foreach="maintenanceRequests" t-as="row" t-key="row.request">
-                                        <tr>
-                                            <td><strong t-esc="row.request"/><span t-esc="row.date"/></td>
-                                            <td><strong t-esc="row.asset"/><span t-esc="row.code"/></td>
-                                            <td t-esc="row.requestedBy"/>
-                                            <td><span t-attf-class="kio_pill kio_pill_#{row.tone}" t-esc="row.status"/></td>
-                                        </tr>
-                                    </t>
-                                    <tr t-if="!maintenanceRequests.length"><td colspan="4">No data available</td></tr>
                                 </tbody>
                             </table>
                         </div>

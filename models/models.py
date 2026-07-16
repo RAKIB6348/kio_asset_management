@@ -70,6 +70,9 @@ class KioAssetUnit(models.Model):
     supplier_id = fields.Many2one('res.partner', string="Supplier / Vendor", index=True, ondelete='set null')
     invoice_number = fields.Char(string="Invoice Number")
     po_number = fields.Char(string="PO Number")
+    purchase_line_id = fields.Many2one('purchase.order.line', string='Purchase Order Line', readonly=True, ondelete='set null', index=True)
+    vendor_bill_line_id = fields.Many2one('account.move.line', string='Vendor Bill Line', readonly=True, ondelete='set null', index=True)
+    purchase_currency_id = fields.Many2one('res.currency', string='Purchase Currency', readonly=True, ondelete='set null')
     tags_notes = fields.Text(string="Tags / Notes")
     active = fields.Boolean(default=True)
     depreciation_method = fields.Selection([
@@ -246,6 +249,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'categoryOptions': self._category_options(),
             'conditionOptions': self._condition_options(),
             'assetTypeOptions': self._asset_type_options(),
+            'companyCurrency': self._currency_payload(self.env.company.currency_id),
             'supplierOptions': self._supplier_options(rows),
         }
 
@@ -318,6 +322,14 @@ class KioAssetDashboardService(models.AbstractModel):
         asset_types = self.env['kio.asset.type'].sudo().search([('active', '=', True)], order='sequence asc, name asc')
         return [{'id': asset_type.id, 'name': asset_type.name} for asset_type in asset_types]
 
+    def _currency_payload(self, currency):
+        return {
+            'id': currency.id if currency else False,
+            'symbol': currency.symbol if currency else '',
+            'position': currency.position if currency else 'before',
+            'name': currency.name if currency else '',
+        }
+
     def _category_options(self):
         return self._asset_category_options()
 
@@ -359,36 +371,115 @@ class KioAssetDashboardService(models.AbstractModel):
     def _get_purchase_financials(self, products):
         if not products:
             return {}
-        lines = self.env['account.move.line'].search([
+        result = {}
+        posted_lines = self._purchase_bill_lines(products, ['posted'])
+        self._add_purchase_bill_financials(result, posted_lines)
+
+        products_without_posted_bills = products.filtered(lambda product: not result.get(product.id, {}).get('unit_sources'))
+        if products_without_posted_bills:
+            draft_lines = self._purchase_bill_lines(products_without_posted_bills, ['draft'])
+            self._add_purchase_bill_financials(result, draft_lines)
+
+        products_without_bill_sources = products.filtered(lambda product: not result.get(product.id, {}).get('unit_sources'))
+        if products_without_bill_sources:
+            self._add_purchase_order_financials(result, products_without_bill_sources)
+        return result
+
+    def _purchase_bill_lines(self, products, states):
+        return self.env['account.move.line'].sudo().search([
             ('product_id', 'in', products.ids),
-            ('move_id.state', '=', 'posted'),
-            ('move_id.move_type', 'in', ['in_invoice', 'in_refund']),
+            ('move_id.state', 'in', states),
+            ('move_id.move_type', '=', 'in_invoice'),
             ('move_id.journal_id.type', '=', 'purchase'),
             ('display_type', 'not in', ['line_section', 'line_note']),
-        ], order='date desc, id desc')
-        result = {}
+        ], order='date asc, id asc')
+
+    def _financial_bucket(self, result, product):
+        return result.setdefault(product.id, {
+            'purchase_value': 0.0,
+            'quantity': 0.0,
+            'purchase_date': False,
+            'vendor': '',
+            'vendor_id': False,
+            'invoice': '',
+            'po_number': '',
+            'currency_id': False,
+            'unit_sources': [],
+        })
+
+    def _add_purchase_bill_financials(self, result, lines):
         for line in lines:
-            product_data = result.setdefault(line.product_id.id, {
-                'purchase_value': 0.0,
-                'quantity': 0.0,
-                'purchase_date': False,
-                'vendor': '',
-                'vendor_id': False,
-                'invoice': '',
-                'po_number': '',
-            })
-            sign = -1.0 if line.move_id.move_type == 'in_refund' else 1.0
-            product_data['purchase_value'] += sign * line.price_subtotal
-            product_data['quantity'] += sign * line.quantity
+            product_data = self._financial_bucket(result, line.product_id)
+            purchase_line = line.purchase_line_id if 'purchase_line_id' in line._fields else self.env['purchase.order.line']
+            purchase_order = purchase_line.order_id if purchase_line else self.env['purchase.order']
+            currency = line.currency_id or line.move_id.currency_id or purchase_order.currency_id or line.company_id.currency_id
+            quantity = max(int(line.quantity or 0), 0)
+            if quantity < 1:
+                quantity = 1
+            product_data['purchase_value'] += line.price_subtotal
+            product_data['quantity'] += line.quantity or quantity
             if not product_data['purchase_date']:
                 product_data.update({
                     'purchase_date': line.move_id.invoice_date or line.move_id.date,
                     'vendor': line.move_id.partner_id.display_name or '',
                     'vendor_id': line.move_id.partner_id.id or False,
-                    'invoice': line.move_id.name or line.move_id.ref or '',
-                    'po_number': line.move_id.invoice_origin or '',
+                    'invoice': line.move_id.name if line.move_id.name and line.move_id.name != '/' else '',
+                    'po_number': purchase_order.name if purchase_order else '',
+                    'currency_id': currency.id if currency else False,
                 })
-        return result
+            source = self._purchase_source_payload(
+                purchase_line=purchase_line,
+                vendor_bill_line=line,
+                currency=currency,
+                unit_price=line.price_unit,
+            )
+            product_data['unit_sources'].extend([source] * quantity)
+
+    def _add_purchase_order_financials(self, result, products):
+        lines = self.env['purchase.order.line'].sudo().search([
+            ('product_id', 'in', products.ids),
+            ('order_id.state', 'in', ['purchase', 'done']),
+        ], order='date_order asc, id asc')
+        for line in lines:
+            product_data = self._financial_bucket(result, line.product_id)
+            currency = line.currency_id or line.order_id.currency_id or line.company_id.currency_id
+            quantity = max(int(line.product_qty or 0), 0)
+            if quantity < 1:
+                quantity = 1
+            product_data['purchase_value'] += line.price_subtotal
+            product_data['quantity'] += line.product_qty or quantity
+            if not product_data['purchase_date']:
+                product_data.update({
+                    'purchase_date': line.order_id.date_order,
+                    'vendor': line.order_id.partner_id.display_name or '',
+                    'vendor_id': line.order_id.partner_id.id or False,
+                    'invoice': '',
+                    'po_number': line.order_id.name or '',
+                    'currency_id': currency.id if currency else False,
+                })
+            source = self._purchase_source_payload(
+                purchase_line=line,
+                vendor_bill_line=False,
+                currency=currency,
+                unit_price=line.price_unit,
+            )
+            product_data['unit_sources'].extend([source] * quantity)
+
+    def _purchase_source_payload(self, purchase_line=False, vendor_bill_line=False, currency=False, unit_price=0.0):
+        purchase_order = purchase_line.order_id if purchase_line else self.env['purchase.order']
+        vendor_bill = vendor_bill_line.move_id if vendor_bill_line else self.env['account.move']
+        currency = currency or vendor_bill.currency_id or purchase_order.currency_id or self.env.company.currency_id
+        return {
+            'purchase_line_id': purchase_line.id if purchase_line else False,
+            'vendor_bill_line_id': vendor_bill_line.id if vendor_bill_line else False,
+            'purchase_order_number': purchase_order.name if purchase_order else '-',
+            'vendor_bill_number': vendor_bill.name if vendor_bill and vendor_bill.name and vendor_bill.name != '/' else '-',
+            'purchase_price': unit_price or 0.0,
+            'currency_id': currency.id if currency else False,
+            'currency_symbol': currency.symbol if currency else '',
+            'currency_position': currency.position if currency else 'before',
+            'currency_name': currency.name if currency else '',
+        }
 
     def _product_to_asset_row(self, product, financial):
         purchase_value = financial.get('purchase_value') or product.standard_price or 0.0
@@ -397,6 +488,7 @@ class KioAssetDashboardService(models.AbstractModel):
             quantity = 1
         unit_value = purchase_value / quantity if quantity else purchase_value
         purchase_date = financial.get('purchase_date')
+        currency = self.env['res.currency'].sudo().browse(financial.get('currency_id')) if financial.get('currency_id') else self.env.company.currency_id
         code = product.default_code or 'AST-%05d' % product.id
         seller_ids = product.seller_ids if 'seller_ids' in product._fields else product.product_tmpl_id.seller_ids
         product_supplier = seller_ids[:1].partner_id if seller_ids else False
@@ -417,8 +509,8 @@ class KioAssetDashboardService(models.AbstractModel):
             'assignedTo': '-',
             'assignedMeta': '',
             'purchaseDate': self._format_date(purchase_date),
-            'price': self._format_money(unit_value),
-            'totalPrice': self._format_money(purchase_value),
+            'price': self._format_money(unit_value, currency),
+            'totalPrice': self._format_money(purchase_value, currency),
             'quantity': quantity,
             'qtyIndex': 1,
             'qtyTotal': quantity,
@@ -427,10 +519,17 @@ class KioAssetDashboardService(models.AbstractModel):
             'status': 'Available',
             'tone': 'green',
             'purchaseValue': purchase_value,
+            'currencyId': currency.id if currency else False,
+            'currencySymbol': currency.symbol if currency else '',
+            'currencyPosition': currency.position if currency else 'before',
+            'currencyName': currency.name if currency else '',
+            'purchaseSources': financial.get('unit_sources') or [],
             'supplierId': vendor_id,
             'vendor': vendor_name,
-            'invoiceNumber': financial.get('invoice') or '',
-            'poNumber': financial.get('po_number') or '',
+            'vendorBillNumber': financial.get('invoice') or '-',
+            'invoiceNumber': financial.get('invoice') or '-',
+            'purchaseOrderNumber': financial.get('po_number') or '-',
+            'poNumber': financial.get('po_number') or '-',
         }
 
     def _sync_asset_units(self, rows):
@@ -449,15 +548,86 @@ class KioAssetDashboardService(models.AbstractModel):
             if obsolete_units:
                 obsolete_units.unlink()
             for index in range(1, quantity + 1):
+                source = self._purchase_source_for_index(row, index)
                 if index in existing_indexes:
+                    unit = existing_units.filtered(lambda item: item.unit_index == index)[:1]
+                    if unit:
+                        self._apply_purchase_source_to_unit(unit, source)
                     continue
-                unit_model.create({
+                vals = {
                     'product_id': product_id,
                     'unit_index': index,
                     'asset_code': sequence.next_by_code('asset.management.code'),
                     'category_id': row.get('categoryId') or False,
                     'supplier_id': row.get('supplierId') or False,
-                })
+                }
+                vals.update(self._purchase_source_unit_vals(source))
+                unit_model.create(vals)
+
+    def _purchase_source_for_index(self, row, index):
+        sources = row.get('purchaseSources') or []
+        return sources[index - 1] if len(sources) >= index else {}
+
+    def _purchase_source_unit_vals(self, source):
+        source = source or {}
+        vals = {}
+        if source.get('purchase_line_id'):
+            vals['purchase_line_id'] = source['purchase_line_id']
+        if source.get('vendor_bill_line_id'):
+            vals['vendor_bill_line_id'] = source['vendor_bill_line_id']
+        if source.get('purchase_price') is not None:
+            vals['purchase_price'] = source.get('purchase_price') or 0.0
+        if source.get('currency_id'):
+            vals['purchase_currency_id'] = source['currency_id']
+        return vals
+
+    def _apply_purchase_source_to_unit(self, unit, source):
+        vals = {}
+        source_vals = self._purchase_source_unit_vals(source)
+        if source_vals.get('purchase_line_id') and not unit.purchase_line_id:
+            vals['purchase_line_id'] = source_vals['purchase_line_id']
+        if source_vals.get('vendor_bill_line_id') and not unit.vendor_bill_line_id:
+            vals['vendor_bill_line_id'] = source_vals['vendor_bill_line_id']
+        if source_vals.get('purchase_currency_id') and not unit.purchase_currency_id:
+            vals['purchase_currency_id'] = source_vals['purchase_currency_id']
+        if source_vals.get('purchase_price') and not unit.purchase_price:
+            vals['purchase_price'] = source_vals['purchase_price']
+        if vals:
+            unit.write(vals)
+        return True
+
+    def _asset_unit_purchase_info(self, unit, row, index):
+        source = self._purchase_source_for_index(row, index)
+        bill_line = unit.vendor_bill_line_id
+        purchase_line = unit.purchase_line_id or (bill_line.purchase_line_id if bill_line and 'purchase_line_id' in bill_line._fields else self.env['purchase.order.line'])
+        vendor_bill = bill_line.move_id if bill_line else self.env['account.move']
+        purchase_order = purchase_line.order_id if purchase_line else self.env['purchase.order']
+        currency = (
+            (vendor_bill.currency_id if vendor_bill else False)
+            or (purchase_order.currency_id if purchase_order else False)
+            or unit.purchase_currency_id
+            or self.env['res.currency'].sudo().browse(source.get('currency_id'))
+            or unit.company_id.currency_id
+            or self.env.company.currency_id
+        )
+        purchase_price = 0.0
+        if bill_line:
+            purchase_price = bill_line.price_unit or 0.0
+        elif purchase_line:
+            purchase_price = purchase_line.price_unit or 0.0
+        elif unit.purchase_price:
+            purchase_price = unit.purchase_price
+        elif source.get('purchase_price') is not None:
+            purchase_price = source.get('purchase_price') or 0.0
+        else:
+            purchase_price = row.get('unitPrice') or unit.product_id.standard_price or 0.0
+
+        return {
+            'purchase_order_number': purchase_order.name if purchase_order else (source.get('purchase_order_number') or '-'),
+            'vendor_bill_number': vendor_bill.name if vendor_bill and vendor_bill.name and vendor_bill.name != '/' else (source.get('vendor_bill_number') or '-'),
+            'purchase_price': purchase_price,
+            'currency': currency,
+        }
 
     def _expand_rows_by_quantity(self, rows):
         expanded = []
@@ -481,6 +651,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 supplier = self._asset_unit_supplier(unit, row)
                 condition = unit.condition_id
                 asset_type = unit.asset_type_id
+                purchase_info = self._asset_unit_purchase_info(unit, row, index)
                 expanded_row = dict(row)
                 display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
                 display_tone = self._asset_status_tone(display_status, employee)
@@ -501,8 +672,14 @@ class KioAssetDashboardService(models.AbstractModel):
                     'assetTypeId': asset_type.id if asset_type else False,
                     'assetType': asset_type.name if asset_type else (unit.asset_type or '-'),
                     'purchaseDate': self._format_date(unit.purchase_date) if unit.purchase_date else row.get('purchaseDate'),
-                    'price': self._format_money(unit.purchase_price) if unit.purchase_price else row.get('price'),
-                    'unitPrice': unit.purchase_price if unit.purchase_price else row.get('unitPrice'),
+                    'price': self._format_money(purchase_info['purchase_price'], purchase_info['currency']),
+                    'purchasePrice': self._format_money(purchase_info['purchase_price'], purchase_info['currency']),
+                    'purchasePriceRaw': purchase_info['purchase_price'],
+                    'unitPrice': purchase_info['purchase_price'],
+                    'currencyId': purchase_info['currency'].id if purchase_info['currency'] else False,
+                    'currencySymbol': purchase_info['currency'].symbol if purchase_info['currency'] else '',
+                    'currencyPosition': purchase_info['currency'].position if purchase_info['currency'] else 'before',
+                    'currencyName': purchase_info['currency'].name if purchase_info['currency'] else '',
                     'warrantyExpiry': self._format_date(unit.warranty_expiry_date),
                     'conditionId': condition.id if condition else False,
                     'condition': condition.name if condition else (unit.condition or '-'),
@@ -518,8 +695,10 @@ class KioAssetDashboardService(models.AbstractModel):
                     'expectedReturnDate': self._format_date(unit.expected_return_date),
                     'supplierId': supplier.id if supplier else False,
                     'supplier': supplier.display_name if supplier else (unit.supplier or row.get('vendor') or ''),
-                    'invoiceNumber': unit.invoice_number or row.get('invoiceNumber') or '',
-                    'poNumber': unit.po_number or row.get('poNumber') or '',
+                    'vendorBillNumber': purchase_info['vendor_bill_number'],
+                    'invoiceNumber': purchase_info['vendor_bill_number'],
+                    'purchaseOrderNumber': purchase_info['purchase_order_number'],
+                    'poNumber': purchase_info['purchase_order_number'],
                     'tagsNotes': unit.tags_notes or '',
                     'active': bool(unit.active),
                     'depreciationMethod': unit.depreciation_method or 'straight_line',
@@ -707,14 +886,21 @@ class KioAssetDashboardService(models.AbstractModel):
             'tagsNotes': row.get('tagsNotes') or '',
             'supplierId': row.get('supplierId') or False,
             'supplier': row.get('supplier') or row.get('vendor') or '-',
-            'invoiceNumber': row.get('invoiceNumber') or '-',
-            'poNumber': row.get('poNumber') or '-',
+            'vendorBillNumber': row.get('vendorBillNumber') or row.get('invoiceNumber') or '-',
+            'invoiceNumber': row.get('vendorBillNumber') or row.get('invoiceNumber') or '-',
+            'purchaseOrderNumber': row.get('purchaseOrderNumber') or row.get('poNumber') or '-',
+            'poNumber': row.get('purchaseOrderNumber') or row.get('poNumber') or '-',
             'purchaseDate': row['purchaseDate'],
             
             # per quantity price
             'purchasePrice': row['price'],
+            'purchasePriceRaw': row.get('purchasePriceRaw') if row.get('purchasePriceRaw') is not None else row.get('unitPrice'),
             'purchasePriceShort': row['price'],
             'currentValue': row['price'],
+            'currencyId': row.get('currencyId') or False,
+            'currencySymbol': row.get('currencySymbol') or '',
+            'currencyPosition': row.get('currencyPosition') or 'before',
+            'currencyName': row.get('currencyName') or '',
             'accumulatedDepreciation': self._format_money(0.0),
             'warrantyExpiry': row.get('warrantyExpiry') or '-',
             'expectedReturn': row.get('expectedReturnDate') or '-',
@@ -722,7 +908,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'depreciationMethod': row.get('depreciationMethod') or 'straight_line',
             'residualValue': row.get('residualValue') or 0.0,
             'depreciationStartDate': row.get('depreciationStartDate') or '-',
-            'invoiceFile': row.get('invoiceNumber') or '-',
+            'invoiceFile': row.get('vendorBillNumber') or row.get('invoiceNumber') or '-',
             'assignment': {'assignedTo': row['assignedTo'], 'assignedToId': row.get('assignedToId') or False, 'department': row['assignedMeta'], 'employeeId': row.get('employeeCode') or '-', 'assignDate': row.get('assignDate') or '-', 'expectedReturn': row.get('expectedReturnDate') or '-'},
             'location': {'location': row['location'], 'buildingFloor': row.get('buildingFloor') or '-', 'roomArea': row.get('roomArea') or '-', 'department': row.get('department') or row['locationMeta']},
             'maintenanceRows': [],
@@ -1788,13 +1974,17 @@ class KioAssetDashboardService(models.AbstractModel):
             return '%s Year%s' % (years, '' if years == 1 else 's')
         return '%s Month%s' % (months, '' if months == 1 else 's')
 
-    def _format_money(self, amount):
-        symbol = self.env.company.currency_id.symbol or '৳'
-        return '%s %s' % (symbol, ('{:,.2f}'.format(amount or 0.0)))
+    def _format_money(self, amount, currency=False):
+        currency = currency or self.env.company.currency_id
+        symbol = currency.symbol or ''
+        formatted_amount = '{:,.2f}'.format(amount or 0.0)
+        if currency.position == 'after':
+            return '%s %s' % (formatted_amount, symbol)
+        return '%s %s' % (symbol, formatted_amount)
 
     def _format_money_short(self, amount):
         amount = amount or 0.0
-        symbol = self.env.company.currency_id.symbol or '৳'
+        symbol = self.env.company.currency_id.symbol or ''
         if abs(amount) >= 1000000:
             return '%s %.2fM' % (symbol, amount / 1000000.0)
         return self._format_money(amount)

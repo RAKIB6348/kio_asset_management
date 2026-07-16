@@ -43,7 +43,6 @@ const ASSET_TEXT_FIELDS = new Set([
     "serialNumber",
     "barcode",
     "status",
-    "purchasePrice",
     "warrantyExpiry",
     "description",
     "location",
@@ -99,6 +98,7 @@ export class AssetDashboard extends Component {
             assetStatusOptions: [],
             conditions: [],
             assetTypes: [],
+            companyCurrency: { id: false, symbol: "", position: "before", name: "" },
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -281,7 +281,12 @@ export class AssetDashboard extends Component {
             assetType: row.assetType || "-",
             assetTypeId: row.assetTypeId ? String(row.assetTypeId) : "",
             purchaseDate: this.normalizeDateInput(row.purchaseDate),
-            purchasePrice: this.moneyToInput(row.price),
+            purchasePriceRaw: this.purchasePriceRaw(row),
+            currencyId: row.currencyId || false,
+            currencySymbol: row.currencySymbol || "",
+            currencyPosition: row.currencyPosition || "before",
+            currencyName: row.currencyName || "",
+            purchasePrice: this.formatCurrencyValue(this.purchasePriceRaw(row), row.currencySymbol || "", row.currencyPosition || "before"),
             warrantyExpiry: this.normalizeDateInput(row.warrantyExpiry),
             assignDate: this.normalizeDateInput(row.assignDate),
             expectedReturnDate: this.normalizeDateInput(row.expectedReturnDate),
@@ -291,8 +296,10 @@ export class AssetDashboard extends Component {
             description: row.description || "",
             supplier: this.many2oneName(supplierValue, row.supplier || row.vendor || ""),
             supplierId: this.many2oneId(supplierValue),
-            invoiceNumber: row.invoiceNumber || "",
-            poNumber: row.poNumber || "",
+            vendorBillNumber: row.vendorBillNumber || row.invoiceNumber || "-",
+            purchaseOrderNumber: row.purchaseOrderNumber || row.poNumber || "-",
+            invoiceNumber: row.vendorBillNumber || row.invoiceNumber || "-",
+            poNumber: row.purchaseOrderNumber || row.poNumber || "-",
             location: row.location,
             locationId: row.locationId ? String(row.locationId) : "",
             buildingFloor: row.buildingFloor || "",
@@ -345,6 +352,14 @@ export class AssetDashboard extends Component {
                     ...assetType,
                     idValue: `${assetType.id}`,
                 }));
+                if (data.companyCurrency) {
+                    this.state.companyCurrency = {
+                        id: data.companyCurrency.id || false,
+                        symbol: data.companyCurrency.symbol || "",
+                        position: data.companyCurrency.position || "before",
+                        name: data.companyCurrency.name || "",
+                    };
+                }
                 this.supplierOptions = (data.supplierOptions || this.supplierOptions).map((supplier) => ({
                     ...supplier,
                     idValue: `${supplier.id}`,
@@ -915,7 +930,8 @@ export class AssetDashboard extends Component {
             status: this.optionalText(this.addAssetForm.status),
             asset_type_id: this.addAssetForm.assetTypeId ? Number(this.addAssetForm.assetTypeId) : false,
             purchase_date: this.normalizeDateInput(this.addAssetForm.purchaseDate) || false,
-            purchase_price: this.parseNumberInput(this.addAssetForm.purchasePrice),
+            purchase_price: Number(this.addAssetForm.purchasePriceRaw || 0),
+            purchase_currency_id: this.addAssetForm.currencyId ? Number(this.addAssetForm.currencyId) : false,
             warranty_expiry_date: this.normalizeDateInput(this.addAssetForm.warrantyExpiry) || false,
             condition_id: this.addAssetForm.conditionId ? Number(this.addAssetForm.conditionId) : false,
             description: this.optionalText(this.addAssetForm.description),
@@ -933,8 +949,6 @@ export class AssetDashboard extends Component {
             depreciation_start_date: this.normalizeDateInput(this.addAssetForm.depreciationStartDate) || false,
             supplier_id: this.addAssetForm.supplierId ? Number(this.addAssetForm.supplierId) : false,
             supplier: this.optionalText(this.addAssetForm.supplier),
-            invoice_number: this.optionalText(this.addAssetForm.invoiceNumber),
-            po_number: this.optionalText(this.addAssetForm.poNumber),
             tags_notes: this.optionalText(this.addAssetForm.tagsNotes),
             active: Boolean(this.addAssetForm.active),
         };
@@ -1009,6 +1023,34 @@ export class AssetDashboard extends Component {
         return number ? String(number) : "";
     }
 
+    purchasePriceRaw(row = {}) {
+        if (row.purchasePriceRaw !== undefined && row.purchasePriceRaw !== null && row.purchasePriceRaw !== false) {
+            return Number(row.purchasePriceRaw) || 0;
+        }
+        if (row.unitPrice !== undefined && row.unitPrice !== null && row.unitPrice !== false) {
+            return Number(row.unitPrice) || 0;
+        }
+        return this.parseNumberInput(row.price || row.purchasePrice);
+    }
+
+    formatCurrencyValue(amount, symbol = "", position = "before") {
+        const formattedAmount = new Intl.NumberFormat(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(Number(amount) || 0);
+        return position === "after" ? `${formattedAmount} ${symbol || ""}`.trim() : `${symbol || ""} ${formattedAmount}`.trim();
+    }
+
+    get purchasePriceLabel() {
+        const symbol = this.addAssetForm.currencySymbol || "";
+        return symbol ? `Purchase Price (${symbol}) *` : "Purchase Price *";
+    }
+
+    get residualValueLabel() {
+        const symbol = this.addAssetForm.currencySymbol || this.state.companyCurrency.symbol || "";
+        return symbol ? `Residual Value (${symbol})` : "Residual Value";
+    }
+
     errorMessage(error) {
         return (error && error.data && error.data.message) || (error && error.message) || "The asset could not be saved. Please review the values and try again.";
     }
@@ -1021,6 +1063,7 @@ export class AssetDashboard extends Component {
     }
 
     resetAddAssetForm() {
+        const companyCurrency = this.state.companyCurrency || {};
         Object.assign(this.addAssetForm, {
             assetCode: "",
             assetName: "",
@@ -1034,6 +1077,11 @@ export class AssetDashboard extends Component {
             assetTypeId: "",
             purchaseDate: "",
             purchasePrice: "",
+            purchasePriceRaw: 0,
+            currencyId: companyCurrency.id || false,
+            currencySymbol: companyCurrency.symbol || "",
+            currencyPosition: companyCurrency.position || "before",
+            currencyName: companyCurrency.name || "",
             warrantyExpiry: "",
             condition: "",
             conditionId: "",
@@ -1054,6 +1102,8 @@ export class AssetDashboard extends Component {
             depreciationStartDate: "",
             supplier: "",
             supplierId: "",
+            vendorBillNumber: "",
+            purchaseOrderNumber: "",
             invoiceNumber: "",
             poNumber: "",
             tagsNotes: "",
@@ -1098,7 +1148,12 @@ export class AssetDashboard extends Component {
             assetType: this.selectedAsset.assetType || "-",
             assetTypeId: this.selectedAsset.assetTypeId ? String(this.selectedAsset.assetTypeId) : "",
             purchaseDate: this.normalizeDateInput(this.selectedAsset.purchaseDate),
-            purchasePrice: this.moneyToInput(this.selectedAsset.purchasePrice),
+            purchasePriceRaw: this.purchasePriceRaw(this.selectedAsset),
+            currencyId: this.selectedAsset.currencyId || false,
+            currencySymbol: this.selectedAsset.currencySymbol || "",
+            currencyPosition: this.selectedAsset.currencyPosition || "before",
+            currencyName: this.selectedAsset.currencyName || "",
+            purchasePrice: this.formatCurrencyValue(this.purchasePriceRaw(this.selectedAsset), this.selectedAsset.currencySymbol || "", this.selectedAsset.currencyPosition || "before"),
             warrantyExpiry: this.normalizeDateInput(this.selectedAsset.warrantyExpiry),
             condition: this.selectedAsset.condition || "-",
             conditionId: this.selectedAsset.conditionId ? String(this.selectedAsset.conditionId) : "",
@@ -1119,8 +1174,10 @@ export class AssetDashboard extends Component {
             depreciationStartDate: this.normalizeDateInput(this.selectedAsset.depreciationStartDate),
             supplier: this.selectedAsset.supplier,
             supplierId: this.selectedAsset.supplierId ? String(this.selectedAsset.supplierId) : "",
-            invoiceNumber: this.selectedAsset.invoiceNumber,
-            poNumber: this.selectedAsset.poNumber,
+            vendorBillNumber: this.selectedAsset.vendorBillNumber || this.selectedAsset.invoiceNumber || "-",
+            purchaseOrderNumber: this.selectedAsset.purchaseOrderNumber || this.selectedAsset.poNumber || "-",
+            invoiceNumber: this.selectedAsset.vendorBillNumber || this.selectedAsset.invoiceNumber || "-",
+            poNumber: this.selectedAsset.purchaseOrderNumber || this.selectedAsset.poNumber || "-",
             tagsNotes: this.selectedAsset.tagsNotes,
             imagePreviewUrl: this.selectedAsset.imageUrl || "",
             imageBinary: false,

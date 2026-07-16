@@ -15,7 +15,7 @@
 
         <menuitem id="menu_asset_management_root"
                   name="Asset Management"
-                  web_icon="kio_asset_management,static/description/asset.png"
+                  web_icon="kio_asset_management,static/description/icon.png"
                   sequence="10"/>
 
         <menuitem id="menu_asset_management_dashboard"

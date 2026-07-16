@@ -3,3 +3,5 @@ access_kio_asset_unit_user,kio.asset.unit user,model_kio_asset_unit,base.group_u
 access_kio_asset_location_user,kio.asset.location user,model_kio_asset_location,base.group_user,1,0,0,0
 access_kio_asset_location_admin,kio.asset.location admin,model_kio_asset_location,base.group_system,1,1,1,1
 access_kio_asset_condition,kio.asset.condition,model_kio_asset_condition,base.group_user,1,1,1,1
+access_kio_asset_type_user,kio.asset.type user,model_kio_asset_type,base.group_user,1,0,0,0
+access_kio_asset_type_admin,kio.asset.type admin,model_kio_asset_type,base.group_system,1,1,1,1

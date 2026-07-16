@@ -2,3 +2,4 @@
 
 from . import models
 from . import asset_condition
+from . import asset_type

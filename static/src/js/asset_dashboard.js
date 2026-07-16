@@ -43,7 +43,6 @@ const ASSET_TEXT_FIELDS = new Set([
     "serialNumber",
     "barcode",
     "status",
-    "assetType",
     "purchasePrice",
     "warrantyExpiry",
     "description",
@@ -99,6 +98,7 @@ export class AssetDashboard extends Component {
             assetEmployeeOptions: [],
             assetStatusOptions: [],
             conditions: [],
+            assetTypes: [],
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -278,7 +278,8 @@ export class AssetDashboard extends Component {
             serialNumber: row.serial,
             barcode: row.barcode || row.serial,
             status: row.status,
-            assetType: row.assetType || "Tangible",
+            assetType: row.assetType || "-",
+            assetTypeId: row.assetTypeId ? String(row.assetTypeId) : "",
             purchaseDate: this.normalizeDateInput(row.purchaseDate),
             purchasePrice: this.moneyToInput(row.price),
             warrantyExpiry: this.normalizeDateInput(row.warrantyExpiry),
@@ -308,6 +309,7 @@ export class AssetDashboard extends Component {
             active: row.active !== false,
             imageChanged: false,
         });
+        this.ensureCurrentAssetTypeOption(row);
     }
 
     async loadDynamicAssetData(options = {}) {
@@ -338,6 +340,10 @@ export class AssetDashboard extends Component {
                 this.state.conditions = (data.conditionOptions || []).map((condition) => ({
                     ...condition,
                     idValue: `${condition.id}`,
+                }));
+                this.state.assetTypes = (data.assetTypeOptions || []).map((assetType) => ({
+                    ...assetType,
+                    idValue: `${assetType.id}`,
                 }));
                 this.supplierOptions = (data.supplierOptions || this.supplierOptions).map((supplier) => ({
                     ...supplier,
@@ -840,6 +846,14 @@ export class AssetDashboard extends Component {
         this.addAssetForm.category = category ? category.name : this.addAssetForm.category;
     }
 
+    onAssetTypeChange(event) {
+        const assetTypeId = event.target.value || "";
+        const assetType = this.state.assetTypes.find((item) => item.idValue === assetTypeId);
+        this.addAssetForm.assetTypeId = assetTypeId;
+        this.addAssetForm.assetType = assetType ? assetType.name : "";
+        this.state.saveAssetError = "";
+    }
+
     onAssetConditionChange(event) {
         const conditionId = event.target.value || "";
         const condition = this.state.conditions.find((item) => item.idValue === conditionId);
@@ -899,7 +913,7 @@ export class AssetDashboard extends Component {
             serial_number: this.optionalText(this.addAssetForm.serialNumber),
             barcode: this.optionalText(this.addAssetForm.barcode),
             status: this.optionalText(this.addAssetForm.status),
-            asset_type: this.optionalText(this.addAssetForm.assetType),
+            asset_type_id: this.addAssetForm.assetTypeId ? Number(this.addAssetForm.assetTypeId) : false,
             purchase_date: this.normalizeDateInput(this.addAssetForm.purchaseDate) || false,
             purchase_price: this.parseNumberInput(this.addAssetForm.purchasePrice),
             warranty_expiry_date: this.normalizeDateInput(this.addAssetForm.warrantyExpiry) || false,
@@ -931,12 +945,33 @@ export class AssetDashboard extends Component {
     }
 
     validateAssetForm() {
+        if (!this.addAssetForm.assetTypeId) {
+            this.state.saveAssetError = "Please select an asset type.";
+            return false;
+        }
         if (!this.addAssetForm.conditionId) {
             this.state.saveAssetError = "Please select an asset condition.";
             return false;
         }
         this.state.saveAssetError = "";
         return true;
+    }
+
+    ensureCurrentAssetTypeOption(row = {}) {
+        const assetTypeId = this.parsePositiveNumber(row.assetTypeId);
+        if (!assetTypeId || this.state.assetTypes.some((item) => item.id === assetTypeId)) {
+            return;
+        }
+        const assetTypeName = row.assetType && row.assetType !== "-" ? row.assetType : "Archived Asset Type";
+        this.state.assetTypes = [
+            ...this.state.assetTypes,
+            {
+                id: assetTypeId,
+                name: assetTypeName,
+                idValue: `${assetTypeId}`,
+                active: false,
+            },
+        ];
     }
 
     many2oneId(value) {
@@ -996,6 +1031,7 @@ export class AssetDashboard extends Component {
             barcode: "",
             status: "",
             assetType: "",
+            assetTypeId: "",
             purchaseDate: "",
             purchasePrice: "",
             warrantyExpiry: "",
@@ -1059,7 +1095,8 @@ export class AssetDashboard extends Component {
             serialNumber: this.selectedAsset.serial,
             barcode: this.selectedAsset.barcode,
             status: this.selectedAsset.status,
-            assetType: this.selectedAsset.assetType,
+            assetType: this.selectedAsset.assetType || "-",
+            assetTypeId: this.selectedAsset.assetTypeId ? String(this.selectedAsset.assetTypeId) : "",
             purchaseDate: this.normalizeDateInput(this.selectedAsset.purchaseDate),
             purchasePrice: this.moneyToInput(this.selectedAsset.purchasePrice),
             warrantyExpiry: this.normalizeDateInput(this.selectedAsset.warrantyExpiry),
@@ -1089,6 +1126,10 @@ export class AssetDashboard extends Component {
             imageBinary: false,
             active: this.selectedAsset.active !== false,
             imageChanged: false,
+        });
+        this.ensureCurrentAssetTypeOption({
+            assetTypeId: this.selectedAsset.assetTypeId,
+            assetType: this.selectedAsset.assetType,
         });
         this.state.saveAssetError = "";
         this.state.previousPage = this.state.page;

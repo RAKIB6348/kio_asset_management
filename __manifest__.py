@@ -21,11 +21,13 @@ Modern OWL dashboard for tracking assets, assignments, maintenance, and deprecia
         'data/asset_sequence.xml',
         'data/depreciation_cron.xml',
         'data/sync_assignment_status.xml',
+        'data/sync_asset_type_relations.xml',
         'views/dashboard_action.xml',
         'views/asset_location_views.xml',
         'views/views.xml',
         'views/templates.xml',
         'views/kio_asset_condition_views.xml',
+        'views/kio_asset_type_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

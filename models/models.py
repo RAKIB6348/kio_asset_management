@@ -51,6 +51,7 @@ class KioAssetUnit(models.Model):
     serial_number = fields.Char(string="Serial Number")
     barcode = fields.Char(string="Barcode / QR Code")
     status = fields.Char(string="Status")
+    asset_type_id = fields.Many2one('kio.asset.type', string="Asset Type", index=True, ondelete='restrict')
     asset_type = fields.Char(string="Asset Type")
     purchase_date = fields.Date(string="Purchase Date")
     purchase_price = fields.Monetary(string="Purchase Price", currency_field='currency_id')
@@ -164,6 +165,23 @@ class KioAssetUnit(models.Model):
             sequence.write({'number_next_actual': len(units) + 1})
         return True
 
+    @api.model
+    def action_sync_asset_type_relations(self):
+        AssetType = self.env['kio.asset.type'].sudo().with_context(active_test=False)
+        units = self.sudo().with_context(active_test=False).search([
+            ('asset_type_id', '=', False),
+            ('asset_type', 'not in', [False, '']),
+        ])
+        for unit in units:
+            type_name = (unit.asset_type or '').strip()
+            if not type_name or type_name == '-':
+                continue
+            asset_type = AssetType.search([('name', '=', type_name)], limit=1)
+            if not asset_type:
+                asset_type = AssetType.create({'name': type_name})
+            unit.asset_type_id = asset_type.id
+        return True
+
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
@@ -227,6 +245,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'locationOptions': self._location_options(),
             'categoryOptions': self._category_options(),
             'conditionOptions': self._condition_options(),
+            'assetTypeOptions': self._asset_type_options(),
             'supplierOptions': self._supplier_options(rows),
         }
 
@@ -294,6 +313,10 @@ class KioAssetDashboardService(models.AbstractModel):
         order = 'sequence asc, name asc' if 'sequence' in Condition._fields else 'name asc'
         conditions = Condition.search([('active', '=', True)], order=order)
         return [{'id': condition.id, 'name': condition.name} for condition in conditions]
+
+    def _asset_type_options(self):
+        asset_types = self.env['kio.asset.type'].sudo().search([('active', '=', True)], order='sequence asc, name asc')
+        return [{'id': asset_type.id, 'name': asset_type.name} for asset_type in asset_types]
 
     def _category_options(self):
         return self._asset_category_options()
@@ -457,6 +480,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 category = self._asset_unit_category(unit, row)
                 supplier = self._asset_unit_supplier(unit, row)
                 condition = unit.condition_id
+                asset_type = unit.asset_type_id
                 expanded_row = dict(row)
                 display_status = unit.status or ('Assigned' if employee else row.get('status', 'Available'))
                 display_tone = self._asset_status_tone(display_status, employee)
@@ -474,7 +498,8 @@ class KioAssetDashboardService(models.AbstractModel):
                     'brand': unit.brand_model or row.get('brand'),
                     'serial': unit.serial_number or row.get('serial'),
                     'barcode': unit.barcode or unit.serial_number or row.get('serial'),
-                    'assetType': unit.asset_type or 'Tangible',
+                    'assetTypeId': asset_type.id if asset_type else False,
+                    'assetType': asset_type.name if asset_type else (unit.asset_type or '-'),
                     'purchaseDate': self._format_date(unit.purchase_date) if unit.purchase_date else row.get('purchaseDate'),
                     'price': self._format_money(unit.purchase_price) if unit.purchase_price else row.get('price'),
                     'unitPrice': unit.purchase_price if unit.purchase_price else row.get('unitPrice'),
@@ -671,7 +696,8 @@ class KioAssetDashboardService(models.AbstractModel):
             'categoryId': row.get('categoryId') or False,
             'category': row['category'],
             'brand': row['brand'],
-            'assetType': row.get('assetType') or 'Tangible',
+            'assetTypeId': row.get('assetTypeId') or False,
+            'assetType': row.get('assetType') or '-',
             'status': row['status'],
             'statusTone': row['tone'],
             'barcode': row.get('barcode') or row['serial'],

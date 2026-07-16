@@ -10,6 +10,7 @@ export const addAssetFormState = {
     barcode: "",
     status: "",
     assetType: "",
+    assetTypeId: "",
     purchaseDate: "",
     purchasePrice: "",
     warrantyExpiry: "",

@@ -1,0 +1,62 @@
+<odoo>
+    <record id="view_kio_asset_type_tree" model="ir.ui.view">
+        <field name="name">kio.asset.type.tree</field>
+        <field name="model">kio.asset.type</field>
+        <field name="arch" type="xml">
+            <tree string="Asset Types">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_kio_asset_type_form" model="ir.ui.view">
+        <field name="name">kio.asset.type.form</field>
+        <field name="model">kio.asset.type</field>
+        <field name="arch" type="xml">
+            <form string="Asset Type">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_button" options="{'terminology': 'archive'}"/>
+                        </button>
+                    </div>
+                    <group>
+                        <field name="name"/>
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_kio_asset_type_search" model="ir.ui.view">
+        <field name="name">kio.asset.type.search</field>
+        <field name="model">kio.asset.type</field>
+        <field name="arch" type="xml">
+            <search string="Search Asset Types">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_kio_asset_type" model="ir.actions.act_window">
+        <field name="name">Asset Types</field>
+        <field name="res_model">kio.asset.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_kio_asset_type_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Asset Type
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_kio_asset_type"
+              name="Asset Types"
+              action="action_kio_asset_type"
+              parent="menu_asset_management_configuration"
+              sequence="30"/>
+</odoo>

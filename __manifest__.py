@@ -8,8 +8,8 @@
 Modern OWL dashboard for tracking assets, assignments, maintenance, and depreciation.
     """,
 
-    'author': "KIO",
-    'website': "https://www.kio.com",
+    'author': "Kendroo Ltd",
+    'website': "https://kendroo.io/",
 
     'category': 'Operations/Inventory',
     'version': '0.1',

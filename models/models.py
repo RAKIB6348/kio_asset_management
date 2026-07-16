@@ -214,6 +214,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'depreciationSummary': self._depreciation_summary(total_assets, purchase_value, depreciation_value, current_value, depreciation_totals['monthly_depreciation'], depreciation_totals['yearly_depreciation']),
             'assignedAssets': self._recent_assigned_assets(rows),
             'employeeOptions': self._employee_options(),
+            'assignedEmployeeOptions': self._employee_filter_options(),
             'locationOptions': self._location_options(),
             'categoryOptions': self._category_options(),
             'supplierOptions': self._supplier_options(rows),
@@ -269,6 +270,10 @@ class KioAssetDashboardService(models.AbstractModel):
     def _employee_options(self):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)], order='name asc')
         return [{'id': employee.id, 'name': employee.name, 'employeeCode': employee.identification_id or employee.barcode or '-'} for employee in employees]
+
+    def _employee_filter_options(self):
+        employees = self.env['hr.employee'].sudo().search([('active', '=', True)], order='name asc')
+        return [{'id': employee.id, 'name': employee.name} for employee in employees]
 
     def _location_options(self):
         locations = self.env['kio.asset.location'].sudo().search([('active', '=', True)], order='name asc')

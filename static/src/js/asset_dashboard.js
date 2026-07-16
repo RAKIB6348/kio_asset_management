@@ -15,6 +15,7 @@ const ROUTE_KEYS = {
     selectedAssetId: "kio_asset_id",
     assetSearch: "kio_asset_search",
     assetLocation: "kio_asset_location_id",
+    assetEmployee: "kio_asset_employee_id",
     assetPage: "kio_asset_page_no",
     assetPageSize: "kio_asset_page_size",
     assetFormMode: "kio_asset_form_mode",
@@ -81,7 +82,7 @@ export class AssetDashboard extends Component {
             assetLocationId: initialRouteState.assetLocationId,
             assetCategoryId: false,
             assetStatus: "",
-            assetAssignedToId: false,
+            selectedEmployeeId: initialRouteState.selectedEmployeeId,
             assetPage: initialRouteState.assetPage,
             assetPageSize: initialRouteState.assetPageSize,
             assetFormMode: initialRouteState.assetFormMode,
@@ -93,6 +94,7 @@ export class AssetDashboard extends Component {
             selectedStatusLabel: "Total Assets",
             selectedStatusValue: "0",
             assetLocationOptions: [],
+            assetEmployeeOptions: [],
         });
         this.assetListKpis = assetListKpis;
         this.assetRows = assetRows;
@@ -174,6 +176,7 @@ export class AssetDashboard extends Component {
             selectedAssetId: this.parsePositiveNumber(hash[ROUTE_KEYS.selectedAssetId] || context.asset_id),
             assetSearch: hash[ROUTE_KEYS.assetSearch] || "",
             assetLocationId: this.parsePositiveNumber(hash[ROUTE_KEYS.assetLocation] || context.location_id),
+            selectedEmployeeId: this.parsePositiveNumber(hash[ROUTE_KEYS.assetEmployee] || context.employee_id),
             assetPage: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPage]) || 1,
             assetPageSize: this.parsePositiveNumber(hash[ROUTE_KEYS.assetPageSize]) || 10,
             assetFormMode: this.sanitizeFormMode(hash[ROUTE_KEYS.assetFormMode]),
@@ -203,6 +206,7 @@ export class AssetDashboard extends Component {
             [ROUTE_KEYS.selectedAssetId]: (isDetails || isEdit) && this.state.selectedAssetId ? this.state.selectedAssetId : undefined,
             [ROUTE_KEYS.assetSearch]: this.state.assetSearch || undefined,
             [ROUTE_KEYS.assetLocation]: this.state.assetLocationId || undefined,
+            [ROUTE_KEYS.assetEmployee]: this.state.selectedEmployeeId || undefined,
             [ROUTE_KEYS.assetPage]: this.state.assetPage > 1 ? this.state.assetPage : undefined,
             [ROUTE_KEYS.assetPageSize]: this.state.assetPageSize !== 10 ? this.state.assetPageSize : undefined,
             [ROUTE_KEYS.assetFormMode]: this.state.page === "add_asset" ? this.state.assetFormMode : undefined,
@@ -220,6 +224,7 @@ export class AssetDashboard extends Component {
         this.state.previousPage = routeState.previousPage;
         this.state.assetSearch = routeState.assetSearch;
         this.state.assetLocationId = routeState.assetLocationId;
+        this.state.selectedEmployeeId = routeState.selectedEmployeeId;
         this.state.assetPage = routeState.assetPage;
         this.state.assetPageSize = routeState.assetPageSize;
         this.state.assetFormMode = routeState.assetFormMode;
@@ -300,6 +305,11 @@ export class AssetDashboard extends Component {
             if (data) {
                 this.employeeOptions = (data.employeeOptions || this.employeeOptions).map((employee) => ({
                     ...employee,
+                    idValue: `${employee.id}`,
+                }));
+                this.state.assetEmployeeOptions = (data.assignedEmployeeOptions || this.employeeOptions).map((employee) => ({
+                    id: employee.id,
+                    name: employee.name,
                     idValue: `${employee.id}`,
                 }));
                 this.locationOptions = (data.locationOptions || this.locationOptions).map((location) => ({
@@ -526,7 +536,7 @@ export class AssetDashboard extends Component {
     matchesSelectedAssetFilters(row) {
         const selectedCategoryId = this.parsePositiveNumber(this.state.assetCategoryId);
         const selectedLocationId = this.parsePositiveNumber(this.state.assetLocationId);
-        const selectedEmployeeId = this.parsePositiveNumber(this.state.assetAssignedToId);
+        const selectedEmployeeId = this.parsePositiveNumber(this.state.selectedEmployeeId);
         const selectedStatus = String(this.state.assetStatus || "").trim();
 
         if (selectedCategoryId && Number(row.categoryId || 0) !== selectedCategoryId) {
@@ -610,6 +620,12 @@ export class AssetDashboard extends Component {
 
     onAssetLocationFilterChange(event) {
         this.state.assetLocationId = this.parsePositiveNumber(event.target.value) || false;
+        this.state.assetPage = 1;
+        this.updateRoute({ replace: true });
+    }
+
+    onAssetEmployeeFilterChange(event) {
+        this.state.selectedEmployeeId = this.parsePositiveNumber(event.target.value) || false;
         this.state.assetPage = 1;
         this.updateRoute({ replace: true });
     }

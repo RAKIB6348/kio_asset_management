@@ -70,7 +70,12 @@
                     </label>
                     <label class="kio_filter_field">
                         <span>Assigned To</span>
-                        <select><option>All</option></select>
+                        <select t-att-value="state.selectedEmployeeId || ''" t-on-change="onAssetEmployeeFilterChange">
+                            <option value="">All</option>
+                            <t t-foreach="state.assetEmployeeOptions" t-as="employee" t-key="employee.id">
+                                <option t-att-value="employee.idValue" t-att-selected="state.selectedEmployeeId === employee.id" t-esc="employee.name"/>
+                            </t>
+                        </select>
                     </label>
                     <button class="kio_more_filters" type="button"><i class="fa fa-sliders"/> More Filters</button>
                 </section>

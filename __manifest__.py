@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "kio_asset_management",
+    'name': "Kendroo Asset Management",
 
-    'summary': "Enterprise asset management dashboard",
+    'summary': "Enterprise asset management dashboard by Kendroo",
 
     'description': """
-Modern OWL dashboard for tracking assets, assignments, maintenance, and depreciation.
+Kendroo Asset Management provides a modern OWL dashboard for tracking assets, assignments, maintenance, and depreciation.
     """,
 
     'author': "Kendroo Ltd",

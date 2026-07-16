@@ -86,7 +86,7 @@
                     <article class="kio_panel">
                         <div class="kio_panel_header">
                             <h2>Assets by Location</h2>
-                            <button type="button">View all</button>
+                            <!-- <button type="button">View all</button> -->
                         </div>
                         <div class="kio_bar_chart">
                             <div class="kio_y_axis">
@@ -110,7 +110,7 @@
                     <article class="kio_panel">
                         <div class="kio_panel_header">
                             <h2>Recent Assigned Assets</h2>
-                            <button type="button">View all</button>
+                            <!-- <button type="button">View all</button> -->
                         </div>
                         <div class="kio_table_wrap">
                             <table class="kio_table">
@@ -136,7 +136,7 @@
                     <article class="kio_panel">
                         <div class="kio_panel_header">
                             <h2>Depreciation Summary</h2>
-                            <button type="button">View all</button>
+                            <!-- <button type="button">View all</button> -->
                         </div>
                         <div class="kio_summary_list">
                             <t t-foreach="depreciationSummary" t-as="item" t-key="item.label">

@@ -17,6 +17,7 @@ Modern OWL dashboard for tracking assets, assignments, maintenance, and deprecia
     'depends': ['base', 'web', 'product', 'account', 'hr', 'purchase'],
 
     'data': [
+        'security/security_groups.xml',
         'security/ir.model.access.csv',
         'data/asset_sequence.xml',
         'data/depreciation_cron.xml',

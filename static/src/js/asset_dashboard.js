@@ -29,7 +29,7 @@ const VALID_FORM_MODES = new Set(["create", "edit"]);
 const ASSET_STATUS_COLORS = {
     Active: "#13a344",
     Assigned: "#2082ff",
-    "Under Maintenance": "#ff7a13",
+    "In Repair": "#ff7a13",
     Unassigned: "#7039bf",
     Retired: "#ee2f43",
     Scrapped: "#8aa0bf",
@@ -108,7 +108,7 @@ export class AssetDashboard extends Component {
             { title: "Total Assets", value: "0", meta: "View all assets", icon: "fa-cube", tone: "blue", action: true, page: "asset_list" },
             { title: "Active Assets", value: "0", meta: "0.00% of total", icon: "fa-check", tone: "green" },
             { title: "Assigned Assets", value: "0", meta: "0.00% of total", icon: "fa-user", tone: "orange" },
-            { title: "Under Maintenance", value: "0", meta: "0.00% of total", icon: "fa-clock-o", tone: "purple" },
+            { title: "In Repair", value: "0", meta: "0.00% of total", icon: "fa-clock-o", tone: "purple" },
             { title: "Unassigned Assets", value: "0", meta: "0.00% of total", icon: "fa-ban", tone: "red" },
             { title: "Depreciated Value", value: "0.00", meta: "View depreciation", icon: "fa-money", tone: "teal", action: true },
             { title: "Asset Purchase Value", value: "0.00", meta: "View details", icon: "fa-database", tone: "violet", action: true },
@@ -123,7 +123,7 @@ export class AssetDashboard extends Component {
         this.statuses = [
             { label: "Active", value: "0", percent: "0.00%", tone: "green" },
             { label: "Assigned", value: "0", percent: "0.00%", tone: "blue" },
-            { label: "Under Maintenance", value: "0", percent: "0.00%", tone: "orange" },
+            { label: "In Repair", value: "0", percent: "0.00%", tone: "orange" },
             { label: "Unassigned", value: "0", percent: "0.00%", tone: "purple" },
             { label: "Retired", value: "0", percent: "0.00%", tone: "red" },
             { label: "Scrapped", value: "0", percent: "0.00%", tone: "slate" },

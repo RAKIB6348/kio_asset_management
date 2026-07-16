@@ -105,7 +105,13 @@ class KioAssetUnit(models.Model):
 
     _ASSIGNMENT_STATUS_ASSIGNED = 'Assigned'
     _ASSIGNMENT_STATUS_AVAILABLE = 'Available'
-    _ASSIGNMENT_PROTECTED_STATUS_KEYS = {'under maintenance', 'maintenance', 'retired', 'scrapped'}
+    _ASSIGNMENT_PROTECTED_STATUS_KEYS = {'in repair', 'repair', 'under maintenance', 'maintenance', 'retired', 'scrapped'}
+
+    @api.model
+    def _init_migrate_maintenance_to_repair(self):
+        self.env.cr.execute(
+            "UPDATE kio_asset_unit SET status = 'In Repair' WHERE status = 'Under Maintenance'"
+        )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -210,7 +216,7 @@ class KioAssetDashboardService(models.AbstractModel):
         total_assets = len(rows)
         active_assets = len([row for row in rows if row['status'] != 'Retired'])
         assigned_assets = len([row for row in rows if row['assignedTo'] != '-'])
-        maintenance_assets = len([row for row in rows if row['status'] == 'Under Maintenance'])
+        maintenance_assets = len([row for row in rows if row['status'] in ('Under Maintenance', 'In Repair')])
         retired_assets = len([row for row in rows if row['status'] == 'Retired'])
         scrapped_assets = len([row for row in rows if row['status'] == 'Scrapped'])
         unassigned_assets = max(total_assets - assigned_assets, 0)
@@ -720,7 +726,7 @@ class KioAssetDashboardService(models.AbstractModel):
         status_key = (status or '').strip().lower()
         if status_key == 'assigned':
             return 'blue'
-        if status_key in ('under maintenance', 'maintenance'):
+        if status_key in ('under maintenance', 'maintenance', 'in repair', 'repair'):
             return 'orange'
         if status_key == 'retired':
             return 'red'
@@ -919,7 +925,7 @@ class KioAssetDashboardService(models.AbstractModel):
             {'title': 'Total Assets', 'value': self._format_int(total), 'meta': 'View all assets', 'icon': 'fa-cube', 'tone': 'blue', 'action': True, 'page': 'asset_list'},
             {'title': 'Active Assets', 'value': self._format_int(active), 'meta': self._percent(active, total), 'icon': 'fa-check', 'tone': 'green'},
             {'title': 'Assigned Assets', 'value': self._format_int(assigned), 'meta': self._percent(assigned, total), 'icon': 'fa-user', 'tone': 'orange'},
-            {'title': 'Under Maintenance', 'value': self._format_int(maintenance), 'meta': self._percent(maintenance, total), 'icon': 'fa-clock-o', 'tone': 'purple'},
+            {'title': 'In Repair', 'value': self._format_int(maintenance), 'meta': self._percent(maintenance, total), 'icon': 'fa-clock-o', 'tone': 'purple'},
             {'title': 'Unassigned Assets', 'value': self._format_int(unassigned), 'meta': self._percent(unassigned, total), 'icon': 'fa-ban', 'tone': 'red'},
             {'title': 'Depreciated Value', 'value': self._format_money_short(depreciation), 'meta': 'View depreciation', 'icon': 'fa-money', 'tone': 'teal', 'action': True},
             {'title': 'Asset Purchase Value', 'value': self._format_money_short(purchase), 'meta': 'View details', 'icon': 'fa-database', 'tone': 'violet', 'action': True},
@@ -931,7 +937,7 @@ class KioAssetDashboardService(models.AbstractModel):
             {'title': 'Total Assets', 'value': self._format_int(total), 'icon': 'fa-cube', 'tone': 'blue'},
             {'title': 'Active Assets', 'value': self._format_int(active), 'icon': 'fa-check', 'tone': 'green'},
             {'title': 'Assigned Assets', 'value': self._format_int(assigned), 'icon': 'fa-user', 'tone': 'orange'},
-            {'title': 'Under Maintenance', 'value': self._format_int(maintenance), 'icon': 'fa-wrench', 'tone': 'purple'},
+            {'title': 'In Repair', 'value': self._format_int(maintenance), 'icon': 'fa-wrench', 'tone': 'purple'},
             {'title': 'Retired Assets', 'value': self._format_int(retired), 'icon': 'fa-power-off', 'tone': 'red'},
             {'title': 'Scrapped Assets', 'value': self._format_int(scrapped), 'icon': 'fa-recycle', 'tone': 'teal'},
         ]
@@ -940,7 +946,7 @@ class KioAssetDashboardService(models.AbstractModel):
         return [
             {'label': 'Active', 'value': self._format_int(active), 'percent': self._percent_value(active, total), 'tone': 'green'},
             {'label': 'Assigned', 'value': self._format_int(assigned), 'percent': self._percent_value(assigned, total), 'tone': 'blue'},
-            {'label': 'Under Maintenance', 'value': self._format_int(maintenance), 'percent': self._percent_value(maintenance, total), 'tone': 'orange'},
+            {'label': 'In Repair', 'value': self._format_int(maintenance), 'percent': self._percent_value(maintenance, total), 'tone': 'orange'},
             {'label': 'Unassigned', 'value': self._format_int(unassigned), 'percent': self._percent_value(unassigned, total), 'tone': 'purple'},
             {'label': 'Retired', 'value': self._format_int(retired), 'percent': self._percent_value(retired, total), 'tone': 'red'},
             {'label': 'Scrapped', 'value': self._format_int(scrapped), 'percent': self._percent_value(scrapped, total), 'tone': 'slate'},

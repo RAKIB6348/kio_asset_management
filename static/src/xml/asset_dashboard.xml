@@ -37,7 +37,15 @@
                             <div class="kio_kpi_body">
                                 <h2 t-esc="kpi.title"/>
                                 <strong t-esc="kpi.value"/>
+                                <!--
+                                Generic KPI action link hidden for monetary KPI cards:
+                                Depreciated Value, Asset Purchase Value, and Current Asset Value.
                                 <p t-att-class="kpi.action ? 'kio_link_meta' : ''">
+                                    <span t-esc="kpi.meta"/>
+                                    <i t-if="kpi.action" class="fa fa-angle-right"/>
+                                </p>
+                                -->
+                                <p t-if="kpi.page === 'asset_list'" t-att-class="kpi.action ? 'kio_link_meta' : ''">
                                     <span t-esc="kpi.meta"/>
                                     <i t-if="kpi.action" class="fa fa-angle-right"/>
                                 </p>

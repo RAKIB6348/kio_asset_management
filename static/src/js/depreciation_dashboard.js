@@ -377,7 +377,14 @@ export class DepreciationDashboard extends Component {
     }
 
     onConfigAccountSearchMore() {
-        this.state.configAccountDropdownOpen = true;
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            res_model: "account.account",
+            name: "Chart of Accounts",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            target: "new",
+        });
     }
 
     onConfigFieldChange(fieldName, event) {

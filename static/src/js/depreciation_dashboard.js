@@ -28,9 +28,13 @@ export class DepreciationDashboard extends Component {
             configForm: this.emptyConfigForm(),
             configError: "",
             configSaving: false,
+            configAccountSearch: "",
+            configAccountDropdownOpen: false,
+            configAccountHighlightedIndex: 0,
         });
         onWillStart(async () => this.loadData(this.state.selectedAssetId));
         useExternalListener(window, "keydown", (event) => this.onWindowKeydown(event));
+        useExternalListener(window, "click", (event) => this.onWindowClick(event));
     }
 
     emptyData() {
@@ -83,6 +87,52 @@ export class DepreciationDashboard extends Component {
         const assetId = Number(this.state.selectedAssetId) || false;
         const asset = ((this.state.data && this.state.data.assetOptions) || []).find((item) => item.id === assetId);
         return asset ? asset.label : "";
+    }
+
+    accountLabel(account) {
+        if (!account) {
+            return "";
+        }
+        const code = String(account.code || "").trim();
+        const name = String(account.name || account.label || "").trim();
+        return [code, name].filter(Boolean).join(" ") || String(account.label || "").trim();
+    }
+
+    get selectedConfigExpenseAccount() {
+        const accountId = Number(this.state.configForm.depreciationExpenseAccountId) || false;
+        return ((this.state.data && this.state.data.expenseAccountOptions) || []).find((account) => account.id === accountId) || false;
+    }
+
+    get selectedConfigExpenseAccountLabel() {
+        return this.accountLabel(this.selectedConfigExpenseAccount);
+    }
+
+    get accountSearchInputValue() {
+        if (this.state.configAccountDropdownOpen || this.state.configAccountSearch) {
+            return this.state.configAccountSearch;
+        }
+        return this.selectedConfigExpenseAccountLabel;
+    }
+
+    get filteredConfigExpenseAccounts() {
+        const query = String(this.state.configAccountSearch || "").trim().toLowerCase();
+        const accounts = (this.state.data && this.state.data.expenseAccountOptions) || [];
+        if (!query) {
+            return accounts;
+        }
+        return accounts.filter((account) => {
+            const code = String(account.code || "").toLowerCase();
+            const name = String(account.name || account.label || "").toLowerCase();
+            return code.includes(query) || name.includes(query) || `${code} ${name}`.includes(query);
+        });
+    }
+
+    get visibleConfigExpenseAccounts() {
+        return this.filteredConfigExpenseAccounts.slice(0, 5);
+    }
+
+    get showConfigAccountStartHint() {
+        return !String(this.state.configAccountSearch || "").trim();
     }
 
     get scheduleTableRows() {
@@ -149,8 +199,23 @@ export class DepreciationDashboard extends Component {
 
     onWindowKeydown(event) {
         if (event.key === "Escape" && this.state.configModalOpen && !this.state.configSaving) {
+            if (this.state.configAccountDropdownOpen) {
+                this.closeConfigAccountDropdown();
+                return;
+            }
             this.closeConfigurationModal();
         }
+    }
+
+    onWindowClick(event) {
+        if (!this.state.configModalOpen || !this.state.configAccountDropdownOpen) {
+            return;
+        }
+        const target = event.target;
+        if (target && target.closest && target.closest(".depreciation-account-wrapper")) {
+            return;
+        }
+        this.closeConfigAccountDropdown();
     }
 
     onFromDateChange(event) {
@@ -221,6 +286,9 @@ export class DepreciationDashboard extends Component {
             nextRunDate: config.nextRunDate || "",
             postDueEntriesAutomatically: config.postDueEntriesAutomatically !== false,
         };
+        this.state.configAccountSearch = "";
+        this.state.configAccountDropdownOpen = false;
+        this.state.configAccountHighlightedIndex = 0;
         this.state.configError = "";
     }
 
@@ -234,7 +302,82 @@ export class DepreciationDashboard extends Component {
             return;
         }
         this.state.configModalOpen = false;
+        this.closeConfigAccountDropdown();
         this.state.configError = "";
+    }
+
+    openConfigAccountDropdown() {
+        this.state.configAccountSearch = "";
+        this.state.configAccountDropdownOpen = true;
+        this.state.configAccountHighlightedIndex = 0;
+    }
+
+    closeConfigAccountDropdown() {
+        this.state.configAccountDropdownOpen = false;
+        this.state.configAccountHighlightedIndex = 0;
+        this.state.configAccountSearch = "";
+    }
+
+    onConfigAccountInput(event) {
+        this.state.configError = "";
+        this.state.configAccountSearch = event.target.value || "";
+        this.state.configForm.depreciationExpenseAccountId = "";
+        this.state.configAccountDropdownOpen = true;
+        this.state.configAccountHighlightedIndex = 0;
+    }
+
+    selectConfigExpenseAccount(account) {
+        if (!account) {
+            return;
+        }
+        this.state.configForm.depreciationExpenseAccountId = String(account.id);
+        this.state.configAccountSearch = this.accountLabel(account);
+        this.state.configAccountDropdownOpen = false;
+        this.state.configAccountHighlightedIndex = 0;
+        this.state.configError = "";
+    }
+
+    clearConfigExpenseAccount() {
+        this.state.configForm.depreciationExpenseAccountId = "";
+        this.state.configAccountSearch = "";
+        this.state.configAccountDropdownOpen = false;
+        this.state.configAccountHighlightedIndex = 0;
+    }
+
+    onConfigAccountKeydown(event) {
+        const accounts = this.visibleConfigExpenseAccounts;
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (!this.state.configAccountDropdownOpen) {
+                this.state.configAccountDropdownOpen = true;
+                this.state.configAccountHighlightedIndex = 0;
+                return;
+            }
+            this.state.configAccountHighlightedIndex = accounts.length
+                ? Math.min(this.state.configAccountHighlightedIndex + 1, accounts.length - 1)
+                : 0;
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (!this.state.configAccountDropdownOpen) {
+                this.state.configAccountDropdownOpen = true;
+                this.state.configAccountHighlightedIndex = accounts.length ? accounts.length - 1 : 0;
+                return;
+            }
+            this.state.configAccountHighlightedIndex = Math.max(this.state.configAccountHighlightedIndex - 1, 0);
+        } else if (event.key === "Enter") {
+            if (!this.state.configAccountDropdownOpen || !accounts.length) {
+                return;
+            }
+            event.preventDefault();
+            this.selectConfigExpenseAccount(accounts[this.state.configAccountHighlightedIndex] || accounts[0]);
+        } else if (event.key === "Escape") {
+            event.preventDefault();
+            this.closeConfigAccountDropdown();
+        }
+    }
+
+    onConfigAccountSearchMore() {
+        this.state.configAccountDropdownOpen = true;
     }
 
     onConfigFieldChange(fieldName, event) {

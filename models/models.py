@@ -1001,7 +1001,7 @@ class KioAssetDashboardService(models.AbstractModel):
                 'methodOptions': self._depreciation_method_options(),
                 'fiscalYearOptions': self._fiscal_year_options(),
                 'journalOptions': [{'id': journal.id, 'name': journal.display_name} for journal in journals],
-                'expenseAccountOptions': [{'id': account.id, 'name': account.display_name} for account in expense_accounts],
+                'expenseAccountOptions': [{'id': account.id, 'code': account.code or '', 'name': account.name or account.display_name, 'label': '%s %s' % (account.code or '', account.name or account.display_name)} for account in expense_accounts],
                 'accumulatedAccountOptions': [{'id': account.id, 'name': account.display_name} for account in accumulated_accounts],
                 'selectedAssetId': False,
                 'filters': {},
@@ -1048,7 +1048,7 @@ class KioAssetDashboardService(models.AbstractModel):
             'methodOptions': self._depreciation_method_options(),
             'fiscalYearOptions': self._fiscal_year_options(start_date),
             'journalOptions': [{'id': journal.id, 'name': journal.display_name} for journal in journals],
-            'expenseAccountOptions': [{'id': account.id, 'name': account.display_name} for account in expense_accounts],
+            'expenseAccountOptions': [{'id': account.id, 'code': account.code or '', 'name': account.name or account.display_name, 'label': '%s %s' % (account.code or '', account.name or account.display_name)} for account in expense_accounts],
             'accumulatedAccountOptions': [{'id': account.id, 'name': account.display_name} for account in accumulated_accounts],
             'selectedAssetId': unit.id,
             'filters': {
@@ -1191,7 +1191,6 @@ class KioAssetDashboardService(models.AbstractModel):
         return self.env['account.account'].sudo().search([
             ('company_id', '=', company.id),
             ('deprecated', '=', False),
-            ('account_type', 'in', ['expense', 'expense_depreciation']),
         ], order='code asc, name asc')
 
     def _accumulated_depreciation_account_options(self, company):

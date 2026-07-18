@@ -207,14 +207,24 @@
                             </select>
                         </label>
                         -->
-                        <label>
+                        <label class="depreciation-config-field">
                             <span>Depreciation Expense Account <b>*</b></span>
-                            <select t-att-value="state.configForm.depreciationExpenseAccountId" t-on-change="(ev) => this.onConfigFieldChange('depreciationExpenseAccountId', ev)">
-                                <option value="">Select Account</option>
-                                <t t-foreach="state.data.expenseAccountOptions" t-as="account" t-key="account.id">
-                                    <option t-att-value="account.id" t-att-selected="account.id == state.configForm.depreciationExpenseAccountId" t-esc="account.name"/>
-                                </t>
-                            </select>
+                            <div class="depreciation-account-wrapper">
+                                <input class="depreciation-account-input" type="text" placeholder="Search account by code or name..." autocomplete="off" t-att-value="accountSearchInputValue" t-on-focus="openConfigAccountDropdown" t-on-click="openConfigAccountDropdown" t-on-input="onConfigAccountInput" t-on-keydown="onConfigAccountKeydown"/>
+                                <button t-if="state.configForm.depreciationExpenseAccountId" class="depreciation-account-clear" type="button" aria-label="Clear account" title="Clear account" t-on-click="clearConfigExpenseAccount"><i class="fa fa-times"/></button>
+                                <div t-if="state.configAccountDropdownOpen" class="depreciation-account-menu">
+                                    <t t-if="visibleConfigExpenseAccounts.length">
+                                        <t t-foreach="visibleConfigExpenseAccounts" t-as="account" t-key="account.id">
+                                            <button type="button" t-attf-class="depreciation-account-option #{account_index === state.configAccountHighlightedIndex ? 'is-active' : ''}" t-on-mousedown.prevent="() => this.selectConfigExpenseAccount(account)">
+                                                <t t-esc="accountLabel(account)"/>
+                                            </button>
+                                        </t>
+                                    </t>
+                                    <div t-else="" class="depreciation-account-empty">No accounts found</div>
+                                    <button type="button" class="depreciation-account-search-more" t-on-mousedown.prevent="onConfigAccountSearchMore">Search More...</button>
+                                    <div t-if="showConfigAccountStartHint" class="depreciation-account-hint">Start typing...</div>
+                                </div>
+                            </div>
                         </label>
 <!--
                         <label>

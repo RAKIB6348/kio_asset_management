@@ -139,6 +139,26 @@
     border-color: #b9ccff;
 }
 
+.depreciation-configuration-btn {
+    color: #ffffff;
+    background: #7c3aed;
+    border-color: #7c3aed;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.18);
+}
+
+.depreciation-configuration-btn:hover,
+.depreciation-configuration-btn:focus {
+    color: #ffffff;
+    background: #6d28d9;
+    border-color: #6d28d9;
+}
+
+.depreciation-configuration-btn:active {
+    color: #ffffff;
+    background: #5b21b6;
+    border-color: #5b21b6;
+}
+
 .kio_depr_main {
     display: grid;
     gap: 18px;

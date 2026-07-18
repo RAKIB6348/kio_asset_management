@@ -87,7 +87,6 @@
                             </t>
                         </select>
                     </label>
-                    <button class="kio_more_filters" type="button"><i class="fa fa-sliders"/> More Filters</button>
                 </section>
 
                 <section class="kio_asset_table_card">

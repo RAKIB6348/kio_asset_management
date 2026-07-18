@@ -121,7 +121,7 @@
 
 .kio_filter_panel {
     display: grid;
-    grid-template-columns: minmax(220px, 1.1fr) repeat(4, minmax(170px, 1fr)) 150px;
+    grid-template-columns: minmax(220px, 1.1fr) repeat(4, minmax(170px, 1fr));
     gap: 16px;
     align-items: end;
     margin-top: 18px;
@@ -133,8 +133,7 @@
 }
 
 .kio_filter_search,
-.kio_filter_field select,
-.kio_more_filters {
+.kio_filter_field select {
     height: 48px;
     border: 1px solid #d9e2ef;
     border-radius: 8px;
@@ -172,14 +171,6 @@
 .kio_filter_field select {
     width: 100%;
     padding: 0 14px;
-}
-
-.kio_more_filters {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    font-weight: 750;
 }
 
 .kio_asset_table_card {
@@ -517,8 +508,7 @@
 }
 
 .kio_soft_btn,
-.kio_primary_btn,
-.kio_more_filters {
+.kio_primary_btn {
     min-width: 0;
     text-align: center;
 }
@@ -660,8 +650,7 @@
 
     .kio_table_toolbar div,
     .kio_soft_btn,
-    .kio_primary_btn,
-    .kio_more_filters {
+    .kio_primary_btn {
         width: 100%;
     }
 

@@ -94,8 +94,7 @@
                     <div class="kio_table_toolbar">
                         <p t-esc="assetListShowingText"/>
                         <div>
-                            <button class="kio_soft_btn" type="button"><i class="fa fa-download"/> Download</button>
-                            <button class="kio_soft_btn" type="button"><i class="fa fa-upload"/> Export</button>
+                            <button class="kio_soft_btn kio_download_btn" type="button" t-att-disabled="state.isDownloadingAssets" t-on-click="downloadAllAssets"><i class="fa fa-download"/> <t t-esc="state.isDownloadingAssets ? 'Downloading...' : 'Download'"/></button>
                             <!-- <button class="kio_primary_btn" type="button" t-on-click="openAddAsset"><i class="fa fa-plus"/> Add Asset</button> -->
                         </div>
                     </div>

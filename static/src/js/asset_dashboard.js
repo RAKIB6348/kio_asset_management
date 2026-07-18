@@ -67,6 +67,7 @@ export class AssetDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
+        this.notification = useService("notification");
         this.router = useService("router");
         this.assetStatusChartRef = useRef("assetStatusChart");
         this.assetStatusChart = null;
@@ -89,6 +90,7 @@ export class AssetDashboard extends Component {
             selectedAssetId: initialRouteState.selectedAssetId,
             imageVersion: 0,
             isSavingAsset: false,
+            isDownloadingAssets: false,
             saveAssetError: "",
             selectedStatusLabel: "Total Assets",
             selectedStatusValue: "0",
@@ -670,6 +672,64 @@ export class AssetDashboard extends Component {
         const start = ((this.state.assetPage - 1) * this.state.assetPageSize) + 1;
         const end = Math.min(start + this.state.assetPageSize - 1, total);
         return `Showing ${start} to ${end} of ${total} assets`;
+    }
+
+    exportAssetRows() {
+        return this.filteredAssetRows.map((row) => ({
+            id: row.id || false,
+            code: row.code || "",
+            name: row.name || "",
+            quantity: row.qtyLabel || "",
+            category: row.category || "",
+            brand: row.brand || "",
+            serial: row.serial || "",
+            location: row.location || "",
+            assignedTo: row.assignedTo || "",
+            purchaseDate: row.purchaseDate || "",
+            price: row.price || "",
+            status: row.status || "",
+        }));
+    }
+
+    async downloadAllAssets() {
+        if (this.state.isDownloadingAssets) {
+            return;
+        }
+        const rows = this.exportAssetRows();
+        if (!rows.length) {
+            this.notification.add("No asset records found to download.", { type: "warning" });
+            return;
+        }
+        this.state.isDownloadingAssets = true;
+        try {
+            const result = await this.orm.call("kio.asset.dashboard.service", "export_asset_rows_xlsx", [rows]);
+            if (!result || !result.content) {
+                throw new Error("empty export result");
+            }
+            this.downloadBase64File(result.content, result.filename || "all_assets.xlsx");
+        } catch (error) {
+            console.error("Unable to download asset records", error);
+            this.notification.add("Unable to download asset records. Please try again.", { type: "danger" });
+        } finally {
+            this.state.isDownloadingAssets = false;
+        }
+    }
+
+    downloadBase64File(content, filename) {
+        const binary = atob(content);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+            bytes[index] = binary.charCodeAt(index);
+        }
+        const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 
     get dashboardTotalAssets() {

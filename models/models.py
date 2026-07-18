@@ -5,6 +5,10 @@ from odoo.tools import date_utils
 from odoo.exceptions import UserError, ValidationError
 from dateutil.relativedelta import relativedelta
 from datetime import date
+from io import BytesIO
+from zipfile import ZipFile, ZIP_DEFLATED
+from xml.sax.saxutils import escape
+import base64
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -861,6 +865,69 @@ class KioAssetDashboardService(models.AbstractModel):
                 write_vals[target_field] = self._parse_row_date(values.get(source_field)) or False
         unit.write(write_vals)
         return True
+
+    @api.model
+    def export_asset_rows_xlsx(self, rows):
+        rows = rows or []
+        row_ids = [int(row.get('id')) for row in rows if row.get('id')]
+        if row_ids:
+            allowed_ids = set(self.env['kio.asset.unit'].with_context(active_test=False).search([('id', 'in', row_ids)]).ids)
+            rows = [row for row in rows if row.get('id') in allowed_ids]
+        headers = [
+            'Asset Code', 'Asset Name', 'Quantity', 'Category', 'Brand / Model',
+            'Serial Number', 'Location', 'Assigned To', 'Purchase Date',
+            'Purchase Price', 'Status',
+        ]
+        fields_map = [
+            'code', 'name', 'quantity', 'category', 'brand', 'serial',
+            'location', 'assignedTo', 'purchaseDate', 'price', 'status',
+        ]
+        sheet_rows = [headers] + [[row.get(field_name) or '' for field_name in fields_map] for row in rows]
+        output = BytesIO()
+        with ZipFile(output, 'w', ZIP_DEFLATED) as workbook:
+            workbook.writestr('[Content_Types].xml', self._xlsx_content_types())
+            workbook.writestr('_rels/.rels', self._xlsx_root_rels())
+            workbook.writestr('xl/workbook.xml', self._xlsx_workbook())
+            workbook.writestr('xl/_rels/workbook.xml.rels', self._xlsx_workbook_rels())
+            workbook.writestr('xl/worksheets/sheet1.xml', self._xlsx_sheet(sheet_rows))
+        filename = 'all_assets_%s.xlsx' % fields.Date.to_string(fields.Date.context_today(self))
+        return {
+            'filename': filename,
+            'content': base64.b64encode(output.getvalue()).decode('ascii'),
+        }
+
+    def _xlsx_content_types(self):
+        return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>'''
+
+    def _xlsx_root_rels(self):
+        return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'''
+
+    def _xlsx_workbook(self):
+        return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="All Assets" sheetId="1" r:id="rId1"/></sheets></workbook>'''
+
+    def _xlsx_workbook_rels(self):
+        return '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'''
+
+    def _xlsx_sheet(self, rows):
+        sheet_rows = []
+        for row_index, row in enumerate(rows, start=1):
+            cells = []
+            for column_index, value in enumerate(row, start=1):
+                cell_ref = '%s%s' % (self._xlsx_column_name(column_index), row_index)
+                cells.append('<c r="%s" t="inlineStr"><is><t>%s</t></is></c>' % (cell_ref, escape(str(value))))
+            sheet_rows.append('<row r="%s">%s</row>' % (row_index, ''.join(cells)))
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>' % ''.join(sheet_rows)
+
+    def _xlsx_column_name(self, column_index):
+        name = ''
+        while column_index:
+            column_index, remainder = divmod(column_index - 1, 26)
+            name = chr(65 + remainder) + name
+        return name
 
     @api.model
     def reset_asset_unit_codes(self):

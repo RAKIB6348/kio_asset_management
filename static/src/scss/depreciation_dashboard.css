@@ -890,6 +890,25 @@
     border-top: 1px solid #e5edf8;
 }
 
+.depreciation-config-cancel-btn {
+    color: #dc3545;
+    background: #ffffff;
+    border-color: #dc3545;
+}
+
+.depreciation-config-cancel-btn:hover,
+.depreciation-config-cancel-btn:focus {
+    color: #ffffff;
+    background: #dc3545;
+    border-color: #dc3545;
+}
+
+.depreciation-config-cancel-btn:active {
+    color: #ffffff;
+    background: #bb2d3b;
+    border-color: #b02a37;
+}
+
 .kio_depr_modal_footer .kio_depr_btn:disabled,
 .kio_depr_actions .kio_depr_btn:disabled {
     opacity: .65;

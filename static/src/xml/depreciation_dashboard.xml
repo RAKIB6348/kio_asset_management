@@ -264,7 +264,7 @@
                         -->
                     </div>
                     <footer class="kio_depr_modal_footer">
-                        <button class="kio_depr_btn kio_depr_btn_outline" type="button" t-att-disabled="state.configSaving" t-on-click="closeConfigurationModal">Cancel</button>
+                        <button class="kio_depr_btn kio_depr_btn_outline depreciation-config-cancel-btn" type="button" t-att-disabled="state.configSaving" t-on-click="closeConfigurationModal">Cancel</button>
                         <button class="kio_depr_btn kio_depr_btn_blue" type="button" t-att-disabled="state.configSaving" t-on-click="saveConfiguration">Save Configuration</button>
                     </footer>
                 </section>

@@ -1898,7 +1898,11 @@ class KioAssetDashboardService(models.AbstractModel):
             raise UserError('Please configure the Depreciation Journal before generating depreciation entries.')
         method = unit.depreciation_method or 'straight_line'
         if method in ('straight_line', 'purchase_date'):
-            return self._bill_account_depreciation_accounts(unit)
+            debit_account = self._depreciation_expense_account(unit)
+            credit_account = self._product_category_asset_account(unit)
+            if not credit_account:
+                raise ValidationError('Please configure the Asset Account on the Product Category for this asset.')
+            return debit_account, credit_account
 
         debit_account = self._depreciation_expense_account(unit)
         credit_account = self._accumulated_depreciation_account(journal, unit)

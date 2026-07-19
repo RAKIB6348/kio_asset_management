@@ -204,6 +204,40 @@ class AccountMove(models.Model):
     kio_depreciation_period_end = fields.Date(string='Depreciation Period End', copy=False, index=True)
     kio_depreciation_sequence = fields.Integer(string='Depreciation Sequence', copy=False, index=True)
 
+    def _check_vendor_bill_posted_depreciation_entries(self, operation='delete'):
+        vendor_bills = self.filtered(lambda move: move.move_type == 'in_invoice')
+        if not vendor_bills:
+            return True
+
+        linked_assets = self.env['kio.asset.unit'].sudo().with_context(active_test=False).search([
+            ('vendor_bill_line_id.move_id', 'in', vendor_bills.ids),
+        ])
+        if not linked_assets:
+            return True
+
+        posted_depreciation_move = self.env['account.move'].sudo().search([
+            ('move_type', '=', 'entry'),
+            ('state', '=', 'posted'),
+            ('kio_asset_unit_id', 'in', linked_assets.ids),
+        ], limit=1)
+        if posted_depreciation_move:
+            if operation == 'reset_to_draft':
+                raise ValidationError(
+                    'You cannot reset this Vendor Bill to Draft because one or more linked assets already have posted depreciation journal entries. Please reset the related posted depreciation journal entries to Draft or reverse them first.'
+                )
+            raise ValidationError(
+                'You cannot delete this Vendor Bill because one or more linked assets already have posted depreciation journal entries.'
+            )
+        return True
+
+    def unlink(self):
+        self._check_vendor_bill_posted_depreciation_entries()
+        return super().unlink()
+
+    def button_draft(self):
+        self._check_vendor_bill_posted_depreciation_entries(operation='reset_to_draft')
+        return super().button_draft()
+
 
 class KioAssetDashboardService(models.AbstractModel):
     _name = 'kio.asset.dashboard.service'
